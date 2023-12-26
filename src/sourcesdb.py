@@ -166,6 +166,12 @@ class SourcesDB:
         result = self.cursor.fetchall()
         return result
 
+    def get_sources_by_type_id(self, type_id):
+        query = f"SELECT {URL} FROM sources WHERE {TYPE_ID} = {type_id}"
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+        return result
+
     def drop_all_tables(self):
         query = f"DROP TABLE sources, types"
         self.cursor.execute(query)
