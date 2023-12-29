@@ -12,11 +12,12 @@ class WebScraper:
     def __init__(self, sources_db: SourcesDB):
         self.sources_db = sources_db
 
-    def _rotate_headers(self):
+    @staticmethod
+    def _rotate_headers():
         user_agent = UserAgent()
         return {'User-Agent': user_agent.random}
 
-    def scrape_url(self, url):
+    def _scrape_url(self, url):
         try:
             headers = self._rotate_headers()
             response = requests.get(url, headers=headers)
@@ -31,7 +32,8 @@ class WebScraper:
         source_urls = self.sources_db.get_sources_by_type_id(1)
         # parallelize
 
-    def clean_html(self, html):
+    @staticmethod
+    def _clean_html(html):
 
         exclude_tags = [
             'img', 'style', 'script', 'svg', 'canvas', 'video', 'audio', 'iframe', 'embed', 'object', 'param',
@@ -57,7 +59,8 @@ class WebScraper:
 
         return soup.prettify()
 
-    def transform_tables(self, html):
+    @staticmethod
+    def _transform_tables(html):
         soup = BeautifulSoup(html, 'html.parser')
         to_unwrap = ['tbody', 'thead', 'tfoot']
         for tag_name in to_unwrap:
@@ -73,7 +76,8 @@ class WebScraper:
             table.string = table_text
         return soup.prettify()
 
-    def get_text(self, html):
+    @staticmethod
+    def _get_text(html):
         soup = BeautifulSoup(html, 'html.parser')
         text = soup.get_text(strip=True, separator=' | ')
         return re.sub(r'(\s*\|\s*){2,}', ' | ', text)
@@ -82,6 +86,6 @@ class WebScraper:
 if __name__ == '__main__':
     sources = SourcesDB()
     ws = WebScraper(sources)
-    html = ws.scrape_url('https://www.gotobrno.cz/en/events/otello/')
-    cleaned_html = ws.clean_html(html)
+    html = ws._scrape_url('https://www.gotobrno.cz/en/events/otello/')
+    cleaned_html = ws._clean_html(html)
     print(cleaned_html)
