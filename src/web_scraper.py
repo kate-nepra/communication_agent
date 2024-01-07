@@ -31,6 +31,15 @@ class WebScraper:
         except Exception as e:
             logger.error(f"Error scraping {url}: {e}")
 
+    def _clean_html(self, html):
+        html = self._unwrap_and_decompose(html)
+        html = self._decompose_box_of_links(html)
+        html = self._merge_same_tags(html)
+        html = self._unwrap_unnecessary_tags(html)
+        html = self._fix_newlines(html)
+        html = self._fix_whitespaces(html)
+        return html
+
     @staticmethod
     def _is_box_of_links(tag):
         tag = copy.copy(tag)
@@ -38,7 +47,8 @@ class WebScraper:
             a.decompose()
         return tag.get_text(strip=True) == "" or tag.contents == []
 
-    def _clean_html(self, html):
+    @staticmethod
+    def _unwrap_and_decompose(html):
 
         decompose_patterns = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*header.*",
                               ".*navigation.*", ".*menu.*", ".*search.*", ".*intro__scroll.*", ".*vhide.*", ".*icon.*",
@@ -88,17 +98,59 @@ class WebScraper:
         for tag in soup.find_all(to_unwrap):
             tag.unwrap()
 
+        for tag in soup.find_all():
+            if not tag.get_text(strip=True):
+                tag.decompose()
+
+        return soup.prettify()
+
+    def _decompose_box_of_links(self, html):
+        soup = BeautifulSoup(html, 'html.parser')
         for tag in soup.find_all(['p', 'div']):
             if tag and self._is_box_of_links(tag):
                 prev = tag.find_previous_sibling()
                 if prev and self._is_header(prev):
                     prev.decompose()
                 tag.decompose()
+        return soup.prettify()
 
+    @staticmethod
+    def _merge_same_tags(html):
+        soup = BeautifulSoup(html, 'html.parser')
+        last_tag = None
         for tag in soup.find_all():
-            if not tag.get_text(strip=True):
-                tag.decompose()
+            if last_tag and last_tag.name == tag.name and last_tag.attrs == tag.attrs and tag.string and last_tag.string and len(
+                    tag.find_all(recursive=False)) <= 1 and len(last_tag.find_all(recursive=False)) <= 1 and len(
+                tag.string) > 20 and len(last_tag.string) > 20 and len(
+                tag.string) < 200 and len(last_tag.string) < 200:
+                last_tag.string += '\n' + tag.text
+                tag.extract()
+            else:
+                last_tag = tag
+        return soup.prettify()
 
+    @staticmethod
+    def _unwrap_unnecessary_tags(html):
+        soup = BeautifulSoup(html, 'html.parser')
+        for tag in soup.find_all():
+            if tag.parent.name != 'body' and len(tag.find_all(recursive=False)) == 1 and tag.name != 'a':
+                tag.unwrap()
+        return soup.prettify()
+
+    @staticmethod
+    def _fix_newlines(html):
+        soup = BeautifulSoup(html, 'html.parser')
+        for tag in soup.find_all():
+            if tag.string:
+                tag.string.replace_with(tag.string.replace('\n', ' '))
+        return soup.prettify()
+
+    @staticmethod
+    def _fix_whitespaces(html):
+        soup = BeautifulSoup(html, 'html.parser')
+        for tag in soup.find_all():
+            if tag.string:
+                tag.string.replace_with(' '.join(tag.string.split()))
         return soup.prettify()
 
     @staticmethod
@@ -146,20 +198,20 @@ class WebScraper:
         soup = BeautifulSoup(html, 'html.parser')
 
         def slice_element(element, current_size):
-            if current_size + len(str(element)) <= max_size:
-                current_size += len(str(element))
-                return str(element), current_size
+            if current_size + len(element.prettify()) <= max_size:
+                current_size += len(element.prettify())
+                return element.prettify(), current_size
             else:
                 return None, current_size
 
-        def slice_html_recursive(node, current_size, chunk, last_header=''):
+        def slice_html(node, current_size, chunk, last_header=''):
             for child in node.children:
                 if child.name is not None:
                     if self._is_only_child_header(child):
-                        last_header += str(child)  # TODO: fix format
+                        last_header += child.prettify()
                         continue
-                    elif last_header:
-                        child.append(last_header)
+                    elif last_header != '':
+                        child = BeautifulSoup(last_header + child.prettify(), 'html.parser')
                         last_header = ''
 
                     chunk_part, current_size = slice_element(child, current_size)
@@ -167,11 +219,12 @@ class WebScraper:
                         chunk += chunk_part
                     else:
                         sliced_chunks.append(chunk)
-                        chunk = ''
-                        current_size = 0
-                    slice_html_recursive(child, current_size, chunk, last_header)
+                        chunk = child.prettify()  # TODO: fix too long chunks
+                        current_size = len(chunk)
+            if chunk:
+                sliced_chunks.append(chunk)
 
-        slice_html_recursive(soup, 0, '')
+        slice_html(soup, 0, '')
 
         return sliced_chunks
 
@@ -182,9 +235,9 @@ if __name__ == '__main__':
     html = ws._scrape_url('https://www.gotobrno.cz/en/events/otello/')
     cleaned_html = ws._clean_html(html)
     print(cleaned_html)
-    print('---------------------------- CLEAN UP TO HERE')
-    chunks = ws._slice_html_by_size(cleaned_html, 1000)
+    print("---------------------------------- CLEANED ----------------------------------")
+    chunks = ws._slice_html_by_size(cleaned_html, 1500)
     for chunk in chunks:
         print(chunk)
         print(len(chunk))
-        print('---------------------------- CHUNK HERE')
+        print("---------------------------------- CHUNK ----------------------------------")
