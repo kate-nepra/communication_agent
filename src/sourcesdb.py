@@ -8,7 +8,7 @@ URL = 'url'
 DATE_ADDED = 'date_added'
 CRAWL_ONLY = 'crawl_only'
 PARENT = 'parent'
-TYPE = 'type'
+TYPE = 'record_type'
 TYPE_ID = 'type_id'
 UPDATE_INTERVAL = 'update_interval'
 
@@ -59,7 +59,7 @@ class SourcesDB:
             {CRAWL_ONLY} BOOLEAN NOT NULL,
             {PARENT} VARCHAR(255),
             {TYPE_ID} INT NOT NULL,
-            FOREIGN KEY ({TYPE_ID}) REFERENCES types(id)
+            FOREIGN KEY ({TYPE_ID}) REFERENCES record_types(id)
         );
         """
         self.cursor.execute(create_sources_table)
@@ -67,7 +67,7 @@ class SourcesDB:
 
     def create_types_table(self):
         create_types_table = f"""
-        CREATE TABLE IF NOT EXISTS  types(
+        CREATE TABLE IF NOT EXISTS  record_types(
                 {ID} INT PRIMARY KEY AUTO_INCREMENT,
                 {TYPE} VARCHAR(255) NOT NULL UNIQUE,
                 {UPDATE_INTERVAL} VARCHAR(255) NOT NULL
@@ -76,7 +76,7 @@ class SourcesDB:
         self.cursor.execute(create_types_table)
         self.connection.commit()
 
-    def add_source(self, url, date_added, crawl_only, parent, type):
+    def add_source(self, url, date_added, crawl_only, parent, record_type):
         add_one_line_query = f"""
             INSERT INTO sources ({URL}, {DATE_ADDED}, {CRAWL_ONLY}, {PARENT}, {TYPE_ID})
             SELECT * FROM (SELECT %s, %s, %s, %s, %s) AS tmp
@@ -84,7 +84,7 @@ class SourcesDB:
                 SELECT {URL} FROM sources WHERE {URL} = %s
             ) LIMIT 1;
             """
-        self.cursor.execute(add_one_line_query, (url, date_added, crawl_only, parent, type, url))
+        self.cursor.execute(add_one_line_query, (url, date_added, crawl_only, parent, record_type, url))
         self.connection.commit()
 
     def add_sources(self, sources):
@@ -98,37 +98,37 @@ class SourcesDB:
         self.cursor.executemany(add_many_lines_query, [(s[0], s[1], s[2], s[3], s[4], s[0]) for s in sources])
         self.connection.commit()
 
-    def add_type(self, type, update_interval):
+    def add_type(self, record_type, update_interval):
         add_one_line_query = f"""
-            INSERT INTO types ({TYPE}, {UPDATE_INTERVAL})
+            INSERT INTO record_types ({TYPE}, {UPDATE_INTERVAL})
             SELECT * FROM (SELECT %s, %s) AS tmp
             WHERE NOT EXISTS (
-                SELECT {TYPE} FROM types WHERE {TYPE} = %s
+                SELECT {TYPE} FROM record_types WHERE {TYPE} = %s
             ) LIMIT 1;
             """
-        self.cursor.execute(add_one_line_query, (type, update_interval, type))
+        self.cursor.execute(add_one_line_query, (record_type, update_interval, record_type))
         self.connection.commit()
 
-    def add_types(self, types):
-        add_many_lines_query = """
-            INSERT INTO types (TYPE, UPDATE_INTERVAL)
+    def add_types(self, record_types):
+        add_many_lines_query = f"""
+            INSERT INTO record_types ({TYPE}, {UPDATE_INTERVAL})
             SELECT * FROM (SELECT %s, %s) AS tmp
             WHERE NOT EXISTS (
-                SELECT TYPE FROM types WHERE TYPE = %s
+                SELECT {TYPE} FROM record_types WHERE {TYPE} = %s
             ) LIMIT 1
         """
         # Modify the query to ensure it has the correct number of placeholders
-        self.cursor.executemany(add_many_lines_query, [(t[0], t[1], t[0]) for t in types])
+        self.cursor.executemany(add_many_lines_query, [(t[0], t[1], t[0]) for t in record_types])
         self.connection.commit()
 
     def get_types(self):
-        query = f"SELECT * FROM types"
+        query = f"SELECT * FROM record_types"
         self.cursor.execute(query)
         result = self.cursor.fetchall()
         return result
 
     def get_type_id(self, type_name):
-        query = f"""SELECT {ID} FROM types WHERE {TYPE} = '{type_name}'"""
+        query = f"""SELECT {ID} FROM record_types WHERE {TYPE} = '{type_name}'"""
         self.cursor.execute(query)
         result = self.cursor.fetchone()
         if result:
@@ -145,8 +145,8 @@ class SourcesDB:
 
     def insert_types_from_csv(self, file_path):
         data = pd.read_csv(file_path)
-        types = [tuple(row) for row in data.values]
-        self.add_types(types)
+        record_types = [tuple(row) for row in data.values]
+        self.add_types(record_types)
 
     def get_next_source(self, _id=0):
         query = f"SELECT * FROM sources WHERE {ID} > {_id} ORDER BY {ID} LIMIT 1"
@@ -166,14 +166,14 @@ class SourcesDB:
         result = self.cursor.fetchall()
         return result
 
-    def get_sources_by_type_id(self, type_id):
-        query = f"SELECT {URL} FROM sources WHERE {TYPE_ID} = {type_id}"
+    def get_sources_by_type_id(self, record_type_id):
+        query = f"SELECT {URL} FROM sources WHERE {TYPE_ID} = {record_type_id}"
         self.cursor.execute(query)
         result = self.cursor.fetchall()
         return result
 
     def drop_all_tables(self):
-        query = f"DROP TABLE sources, types"
+        query = f"DROP TABLE sources, record_types"
         self.cursor.execute(query)
         self.connection.commit()
 
@@ -184,7 +184,7 @@ class SourcesDB:
 if __name__ == '__main__':
     sources = SourcesDB()
     # sources.drop_all_tables()
-    sources.insert_types_from_csv('./../data/types.csv')
+    sources.insert_types_from_csv('./../data/record_types.csv')
     print(sources.get_types())
     sources.insert_sources_from_csv('./../data/sources.csv')
     print(sources.get_all_sources())

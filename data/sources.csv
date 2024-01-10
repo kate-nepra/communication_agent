@@ -1,4 +1,4 @@
-url,date_added,crawl_only,type,parent
+url,date_added,crawl_only,record_type,parent
 https://www.gotobrno.cz/en/,1.12.2023,TRUE,event,root
 https://www.brno.cz/,1.12.2023,TRUE,administration,root
 https://en.wikipedia.org/wiki/Brno,1.12.2023,FALSE,static,root
