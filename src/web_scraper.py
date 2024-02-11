@@ -1,10 +1,8 @@
 import logging
 import re
-import time
 
 from bs4 import BeautifulSoup, Comment
 from fake_useragent import UserAgent
-from src.sourcesdb import SourcesDB
 import requests
 import copy
 
@@ -12,15 +10,19 @@ logger = logging.getLogger(__name__)
 
 
 class WebScraper:
-    def __init__(self, sources_db: SourcesDB):
-        self.sources_db = sources_db
+
+    def __init__(self, url):
+        self.url = url
+        self.html = self.scrape_url(url)
+        self.cleaned_html = None
+        self.decomposed_box_of_links_html = None
 
     @staticmethod
     def _rotate_headers():
         user_agent = UserAgent()
         return {'User-Agent': user_agent.random}
 
-    def _scrape_url(self, url):
+    def scrape_url(self, url):
         try:
             headers = self._rotate_headers()
             response = requests.get(url, headers=headers)
@@ -42,24 +44,15 @@ class WebScraper:
 
     @staticmethod
     def _is_box_of_links(tag):
+        if not tag.name:
+            return False
         tag = copy.copy(tag)
         for a in tag.find_all('a'):
             a.decompose()
         return tag.get_text(strip=True) == "" or tag.contents == []
 
     @staticmethod
-    def _unwrap_and_decompose(html):
-
-        decompose_patterns = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*header.*",
-                              ".*navigation.*", ".*menu.*", ".*search.*", ".*intro__scroll.*", ".*vhide.*", ".*icon.*",
-                              ".*logo.*", ".*btn.*", ".*img.*", ".*image.*"]
-
-        unwrap_patterns = [".*grid.*", ".*row.*", ".*col.*", ".*container.*", ".*wrapper.*", ".*content.*",
-                           ".*main.*", ".*article.*", ".*section.*", ".*aside.*", ".*u-mw.*", ".*u-mh.*", ".*u-mt.*",
-                           ".*u-mb.*", ".*u-ml.*", ".*u-mr.*", ".*u-p.*", ".*u-pt.*", ".*u-pb.*", ".*u-pl.*",
-                           ".*u-pr.*", ".*u-pv.*", ".*u-ph.*", ".*u-ta.*", ".*u-tl.*", ".*u-tr.*", ".*u-tc.*",
-                           ".*u-tj.*", ".*u-tv.*", ".*u-dib.*", ".*u-dit.*", ".*u-dib.*", ".*u-dn.*", ]
-
+    def _exclude_tags(soup):
         exclude_tags = [
             'img', 'style', 'script', 'svg', 'canvas', 'video', 'audio', 'iframe', 'embed', 'object', 'param',
             'source', 'track', 'map', 'area', 'math', 'use', 'noscript', 'del', 'ins', 'picture', 'figure',
@@ -68,14 +61,29 @@ class WebScraper:
             'summary', 'menuitem', 'menu', 'caption', 'colgroup', 'col',
             'meta', 'head'
         ]
+        for tag in soup.find_all(exclude_tags):
+            tag.decompose()
 
+        return soup
+
+    @staticmethod
+    def _unwrap_tags(soup):
         to_unwrap = ['strong', 'em', 'sup', 'sub', 'b', 'i', 'u', 's', 'html', 'body', 'main', 'br', 'hr']
+        for tag in soup.find_all(to_unwrap):
+            tag.unwrap()
+        return soup
 
-        soup = BeautifulSoup(html, 'html.parser')
-
+    @staticmethod
+    def _extract_comments(soup):
         for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             comment.extract()
+        return soup
 
+    @staticmethod
+    def _apply_decompose_patterns(soup):
+        decompose_patterns = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*header.*",
+                              ".*navigation.*", ".*menu.*", ".*search.*", ".*intro__scroll.*", ".*vhide.*", ".*icon.*",
+                              ".*logo.*", ".*btn.*", ".*img.*", ".*image.*", ".*f-std.*"]
         combined_d_pattern = "|".join(decompose_patterns)
 
         for tag in soup.find_all(attrs={"class": re.compile(combined_d_pattern)}):
@@ -83,6 +91,15 @@ class WebScraper:
 
         for tag in soup.find_all(attrs={"id": re.compile(combined_d_pattern)}):
             tag.decompose()
+        return soup
+
+    @staticmethod
+    def _apply_unwrap_patterns(soup):
+        unwrap_patterns = [".*grid.*", ".*row.*", ".*col.*", ".*container.*", ".*wrapper.*", ".*content.*",
+                           ".*main.*", ".*article.*", ".*section.*", ".*aside.*", ".*u-mw.*", ".*u-mh.*", ".*u-mt.*",
+                           ".*u-mb.*", ".*u-ml.*", ".*u-mr.*", ".*u-p.*", ".*u-pt.*", ".*u-pb.*", ".*u-pl.*",
+                           ".*u-pr.*", ".*u-pv.*", ".*u-ph.*", ".*u-ta.*", ".*u-tl.*", ".*u-tr.*", ".*u-tc.*",
+                           ".*u-tj.*", ".*u-tv.*", ".*u-dib.*", ".*u-dit.*", ".*u-dib.*", ".*u-dn.*", ]
 
         combined_u_pattern = "|".join(unwrap_patterns)
 
@@ -92,16 +109,23 @@ class WebScraper:
         for tag in soup.find_all(attrs={"id": re.compile(combined_u_pattern)}):
             tag.unwrap()
 
-        for tag in soup.find_all(exclude_tags):
-            tag.decompose()
+        return soup
 
-        for tag in soup.find_all(to_unwrap):
-            tag.unwrap()
-
+    @staticmethod
+    def _decompose_empty_tags(soup):
         for tag in soup.find_all():
             if not tag.get_text(strip=True):
                 tag.decompose()
+        return soup
 
+    def _unwrap_and_decompose(self, html):
+        soup = BeautifulSoup(html, 'html.parser')
+        soup = self._extract_comments(soup)
+        soup = self._exclude_tags(soup)
+        soup = self._apply_decompose_patterns(soup)
+        soup = self._apply_unwrap_patterns(soup)
+        soup = self._unwrap_tags(soup)
+        soup = self._decompose_empty_tags(soup)
         return soup.prettify()
 
     def _decompose_box_of_links(self, html):
@@ -171,12 +195,6 @@ class WebScraper:
         return soup.prettify()
 
     @staticmethod
-    def _get_text(html):
-        soup = BeautifulSoup(html, 'html.parser')
-        text = soup.get_text(strip=True, separator=' | ')
-        return re.sub(r'(\s*\|\s*){2,}', ' | ', text)
-
-    @staticmethod
     def _is_header(element) -> bool:
         return element and element.name and (
                 element.name.startswith('h') or ".*header.*" in element.attrs.get('class', []) or \
@@ -192,6 +210,80 @@ class WebScraper:
         if len(children) == 1:
             return self._is_only_child_header(children[0])
         return False
+
+    def get_clean_text(self):
+        soup = BeautifulSoup(self.get_cleaned_html(), 'html.parser')
+        # text = soup.get_text(strip=True, separator=' | ')
+        # return re.sub(r'(\s*\|\s*){2,}', ' | ', text)
+        return soup.get_text(strip=True, separator='\n')
+
+    @staticmethod
+    def get_text_from_html(html):
+        soup = BeautifulSoup(html, 'html.parser')
+        return soup.get_text(strip=True, separator='\n')
+
+    def get_cleaned_html(self):
+        if not self.cleaned_html:
+            self.cleaned_html = self._clean_html(self.html)
+        return self.cleaned_html
+
+    def get_html_by_chunk_size(self, max_size):
+        return self._slice_html_by_size(self.html, max_size)
+
+    def get_description(self):
+        soup = BeautifulSoup(self.html, 'html.parser')
+        description = soup.find('meta', attrs={'name': 'description'})
+        if description:
+            return description['content']
+        return None
+
+    def get_title(self):
+        soup = BeautifulSoup(self.html, 'html.parser')
+        title = soup.find('title')
+        if title:
+            return title.string
+        return None
+
+    def get_main_header(self):
+        soup = BeautifulSoup(self.html, 'html.parser')
+        main_header = soup.find('h1') or soup.find('h2') or soup.find('h3') or soup.find('h4') or soup.find(
+            'h5') or soup.find('h6')
+        if main_header:
+            return main_header.string
+        return None
+
+    def get_decomposed_box_of_links_html(self):
+        if not self.decomposed_box_of_links_html:
+            html = '' + self.html
+            soup = BeautifulSoup(html, 'html.parser')
+            soup = self._extract_comments(soup)
+            soup = self._exclude_tags(soup)
+            html = soup.prettify()
+            html = self._decompose_box_of_links(html)
+            soup = BeautifulSoup(html, 'html.parser')
+            soup = self._apply_decompose_patterns(soup)
+            soup = self._apply_unwrap_patterns(soup)
+            soup = self._unwrap_tags(soup)
+            soup = self._decompose_empty_tags(soup)
+            html = soup.prettify()
+            html = self._merge_same_tags(html)
+            html = self._unwrap_unnecessary_tags(html)
+            html = self._fix_newlines(html)
+            html = self._fix_whitespaces(html)
+            self.decomposed_box_of_links_html = html
+        return self.decomposed_box_of_links_html
+
+    def is_crawl_only(self) -> bool:
+        """
+        This method checks if the url should be crawled only.
+        :return: bool
+        """
+        html = self.get_decomposed_box_of_links_html()
+        soup = BeautifulSoup(html, 'html.parser')
+        for tag in soup.find_all():
+            if len(tag.text) > 100:
+                return False
+        return True
 
     def _slice_html_by_size(self, html, max_size):
         sliced_chunks = []
@@ -230,14 +322,5 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    sources = SourcesDB()
-    ws = WebScraper(sources)
-    html = ws._scrape_url('https://www.gotobrno.cz/en/events/otello/')
-    cleaned_html = ws._clean_html(html)
-    print(cleaned_html)
-    print("---------------------------------- CLEANED ----------------------------------")
-    chunks = ws._slice_html_by_size(cleaned_html, 1500)
-    for chunk in chunks:
-        print(chunk)
-        print(len(chunk))
-        print("---------------------------------- CHUNK ----------------------------------")
+    ws = WebScraper('https://www.gotobrno.cz/en/explore-brno/')
+    print(ws.get_cleaned_html())

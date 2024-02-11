@@ -1,48 +1,35 @@
 import arrow
 
-from src.sourcesdb import SourcesDB
+from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT
 from src.web_scraper import WebScraper
 from bs4 import BeautifulSoup, Comment
 import pandas as pd
 from urllib.parse import urlparse, urlunparse
 
-URL = 'url'
-DATE_ADDED = 'date_added'
-PARENT = 'parent'
-
 
 class WebCrawler:
 
-    def __init__(self, sources_db: SourcesDB, ws: WebScraper, df: pd.DataFrame, url: str):
-        self.sources_db = sources_db
-        self.ws = ws
-        self.df = df
+    def __init__(self, url, parents: list):
         self.url = url
+        self.ws = WebScraper(url)
+        self.parents = parents
 
-    def _process(self):
-        html = self.ws.scrape_url(self.url)
+    def get_extend_df(self) -> pd.DataFrame:
+        html = self.ws.html
         main_url = self._get_parent_part_url(self.url)
+        urls = []
         if not self._is_url_in_parents(main_url):
-            print(self._get_nav_urls_df(html))  # classify
-        # if crawl_only get urls from main !! should be crawl_only
-        print(self._get_main_urls_df(html))
-        return pd.DataFrame()
+            urls.append(self._get_nav_urls(html))
+        urls.append(self._get_main_urls(html))
+        return self._get_cleaned_df(urls)
 
-    def _get_nav_urls_df(self, html):
-        urls = self._get_nav_urls(html)
+    def _get_cleaned_df(self, urls):
         urls = self._del_subset('?cat=', urls)
         urls = self._clean_url_list(urls)
         dicts = self._create_urls_dict(urls)
         return pd.DataFrame(dicts)
 
-    def _get_main_urls_df(self, html):
-        urls = self._get_main_urls(html)
-        urls = self._clean_url_list(urls)
-        dicts = self._create_urls_dict(urls)
-        return pd.DataFrame(dicts)
-
     def _get_main_urls(self, html):
-        # get urls from main part of the page
         soup = BeautifulSoup(html, 'html.parser')
         main = soup.find('main') or soup.find('body')
         if main:
@@ -51,7 +38,7 @@ class WebCrawler:
         return []
 
     def _create_urls_dict(self, urls):
-        return [{URL: url, DATE_ADDED: arrow.now().format('YYYY-MM-DD'), PARENT: self._get_parent_part_url(url)} for url
+        return [{URL: url, DATE_ADDED: arrow.now().format(DATE_FORMAT), PARENT: self._get_parent_part_url(url)} for url
                 in
                 urls]
 
@@ -62,7 +49,7 @@ class WebCrawler:
         return [url for url in urls if url.startswith('http') or url.startswith('www')]
 
     def _is_url_in_parents(self, url):
-        return url in self.df['parent'].values
+        return url in self.parents
 
     def _get_nav_urls(self, html):
         # get urls from navbar / header / nav in html
@@ -84,7 +71,6 @@ class WebCrawler:
 
 if __name__ == '__main__':
     data = pd.read_csv('./../data/sources.csv')
-    sources = SourcesDB()
-    ws = WebScraper(sources)
-    wc = WebCrawler(sources, ws, data, 'https://www.gotobrno.cz/')
-    wc._process()
+    ws = WebScraper('https://www.gotobrno.cz/en/explore-brno/')
+    wc = WebCrawler('https://www.gotobrno.cz/en/explore-brno/', [])
+    print(wc.get_extend_df())

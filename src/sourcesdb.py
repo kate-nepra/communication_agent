@@ -2,15 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 import pandas as pd
 import logging
-
-ID = 'id'
-URL = 'url'
-DATE_ADDED = 'date_added'
-CRAWL_ONLY = 'crawl_only'
-PARENT = 'parent'
-TYPE = 'record_type'
-TYPE_ID = 'type_id'
-UPDATE_INTERVAL = 'update_interval'
+from constants import ID, URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, UPDATE_INTERVAL, TYPE_ID
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +158,18 @@ class SourcesDB:
         result = self.cursor.fetchall()
         return result
 
+    def get_all_crawl_only_sources(self):
+        query = f"SELECT * FROM sources WHERE {CRAWL_ONLY} != 0"
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+        return result
+
+    def get_existing_from_list(self, url_list):
+        placeholders = ', '.join(['%s' for _ in url_list])
+        query = f"SELECT DISTINCT {URL} FROM sources WHERE {URL} IN ({placeholders})"
+        self.cursor.execute(query, url_list)
+        return self.cursor.fetchall()
+
     def get_sources_by_type_id(self, record_type_id):
         query = f"SELECT {URL} FROM sources WHERE {TYPE_ID} = {record_type_id}"
         self.cursor.execute(query)
@@ -179,6 +183,16 @@ class SourcesDB:
 
     def close_connection(self):
         self.connection.close()
+
+    def update_existing_urls_date(self, existing_urls, date_added):
+        query = f"UPDATE sources SET {DATE_ADDED} = %s WHERE {URL} IN %s"
+        self.cursor.execute(query, (date_added, existing_urls))
+        self.connection.commit()
+
+    def insert_sources(self, extend_df):
+        query = f""" INSERT INTO sources ({URL}, {DATE_ADDED}, {CRAWL_ONLY}, {PARENT}, {TYPE_ID})
+                    VALUES (%s, %s, %s, %s, %s)"""
+        self.cursor.executemany(query, extend_df.values)
 
 
 if __name__ == '__main__':
