@@ -1,5 +1,5 @@
 BLACK_LIST = ['https://www.bam.brno.cz/literatura', 'https://www.bam.brno.cz/architekt',
-              'https://www.bam.brno.cz/umelec', 'https://www.facebook.com/']
+              'https://www.bam.brno.cz/umelec', 'https://www.facebook.com/', 'https://www.brno.cz/mestske-organizace']
 
 DATE_FORMAT = 'YYYY-MM-DD'
 
@@ -11,3 +11,5 @@ PARENT = 'parent'
 TYPE = 'record_type'
 TYPE_ID = 'type_id'
 UPDATE_INTERVAL = 'update_interval'
+
+BRNO_SUBSTRS = ['Brno', 'brno', 'BRNO', 'Brně', 'Brnu', 'Brnem']

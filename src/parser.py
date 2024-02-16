@@ -1,6 +1,6 @@
+import datetime
 from dataclasses import dataclass
 import openai
-import datetime
 from agent.agent import Agent
 import arrow
 
@@ -36,7 +36,13 @@ class EventSchema(ExtendedSchema):
     dates: list[str]
 
 
-def chat_prompt(html: str, url: str) -> list[BaseSchema]:
+@dataclass
+class Duration:
+    start: str
+    end: str = None
+
+
+def get_parsed_content(html: str) -> BaseSchema:
     results: list[BaseSchema] = []
 
     def add_place(header: str, text: str, brief: str, address: str, url: str) -> str:
@@ -50,13 +56,15 @@ def chat_prompt(html: str, url: str) -> list[BaseSchema]:
         results.append(ExtendedSchema(header, "place", brief, text, url, arrow.now().format(DATE_FORMAT), address))
         return "The place was added successfully, you can continue with the further processing."
 
-    def add_event(header: str, text: str, brief: str, address: str, dates: list[str], url: str) -> str:
-        """ Call this function if you encounter entity that is a event such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar.
+    def add_event(header: str, text: str, brief: str, address: str, dates: list[Duration], url: str) -> str:
+        """ Call this function if you encounter entity that is an event such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar.
         Use provided or generate a header more fitting the found text.
         If you encounter a descriptive text of the event, for example a plot of a theatrical performance or a list of songs played at a concert, assign it as the text.
         Create a brief which is a sum up of the text no longer than 3 sentences.
         If you encounter address of a place where the event takes part, assign is as address. Fill in "Not found" if address not found.
-        Assign provided url as url."""
+        Assign provided url as url.
+        Assign date(s) of the event as list of durations. The duration format is a JSON object with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time. For example [{"start": "2024-01-11"}, {"start": "2024-01-14 15:00"}, {"start": 2024-01-31 15:00, "end": 2024-02-14}].
+        """
         print("Adding event")
         results.append(EventSchema(header, "event", brief, text, url, arrow.now().format(DATE_FORMAT), address, dates))
         return "The event was added successfully, you can continue with the further processing."
@@ -74,7 +82,7 @@ def chat_prompt(html: str, url: str) -> list[BaseSchema]:
         return "The administrative entity was added successfully, you can continue with the further processing."
 
     def add_static(header: str, text: str, brief: str, url: str) -> str:
-        """ Call this function if you encounter entity that is static information like article about Brno city from wikipedia or information about well-known personality connected with Brno.
+        """ Call this function if you encounter entity that contains blog post, an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative.
         Use provided or generate a header more fitting the found text.
         If you encounter a descriptive text of the administrative entity assign it as the text.
         Create a brief which is a sum up of the text no longer than 3 sentences.
@@ -83,14 +91,15 @@ def chat_prompt(html: str, url: str) -> list[BaseSchema]:
         results.append(BaseSchema(header, "static", brief, text, url, arrow.now().format(DATE_FORMAT)))
         return "The static entity was added successfully, you can continue with the further processing."
 
-    # agent = Agent(api_key = "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", model="gpt-3.5-turbo-1106")
-    openai.api_base = "http://localhost:1234/v1"
-    openai.api_key = ""
-    agent = Agent()
+    agent = Agent(api_key="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", model="gpt-3.5-turbo-1106")
+    # openai.api_base = "http://localhost:1234/v1"
+    # openai.api_key = ""
+    # agent = Agent()
 
     agent.add_function(add_place)
     agent.add_function(add_event)
     agent.add_function(add_administration)
+    agent.add_function(add_static)
 
     # completion = openai.ChatCompletion.create(
     #     model="local-model",  # this field is currently unused
@@ -103,33 +112,23 @@ def chat_prompt(html: str, url: str) -> list[BaseSchema]:
     # print(completion.choices[0].message)
 
     agent.do_conversation(
-        f""" You are a smart text processor. Follow these instructions: 
+        f""" You are a smart processor of web-scraped text. Follow these instructions: 
         1. Go through the text and extract information from the article
-        2. Use the functions to add the extracted information to the database
+        2. Use the functions with fitting description to transfer the extracted information to pre-defined Schema
         3. Reply "TERMINATE" at the end of the message when everything is done. 
         Here is the text to process ```{html}```""")
     # agent.do_conversation("What functions can you call?")
 
-    return results
+    return results[0]
 
 
-res = chat_prompt("""
-Otello
-Sung in original Italian with Czech, English and German surtitles. Oh, the power of love, power that can turn a person into an animal
-Storms are raging on the coast of Cyprus and the people have gathered in the port to watch in horror as a ship returning from a military campaign against the Turks attempts to make landfall. To everyone´s relief, the ship anchors safely and the crowd welcomes the victorious Otello. A stunning choral performance then ensues, dramatically commencing one of Verdi’s most famous operas, before the story moves on to the dangerous interplay of intrigues and jealousy that arise around Otello and his wife Desdemona thanks to the machinations of the treacherous Iago. Shakespeare´s famous tragedy has been staged for more than four hundred years, and it still hasn’t lost any of its relevance. Giuseppe Verdi was a great admirer of Shakespeare´s work, and he considered the possibility of setting one of his plays to music many times. Aside from his version of Macbeth , at the end of Verdi´s life he finally chose Otello . This time, he was lucky not only to have found an excellent topic, but also a great librettist, as his collaborator was none other than the Italian poet and composer Arrigo Boito, who helped him flesh out his ideas into an ideal form. Verdi´s penultimate opera is truly a masterpiece, with three-dimensionally depicted characters and grand choral scenes that alternate with intimate lyrical moments. The role of Otello tests the skills of the best of heroic tenors, as Verdi imbued it with every shade of the human soul – at first portrayed as a warrior, and then as a tender and loving man, Otello finally transforms into a wounded animal consumed by jealousy. This unique work by Verdi is returning to the Brno stage after more than thirty years away.
-Premiere: 17 th June 2022 at the Janáček Theatre Nastudováno v italském originále s českými, anglickými a německými titulky. Délka představení: 2 hodiny a 40 minut
-More information
-6 january 2024 - 17:00 18 february 2024 - 17:00 2 march 2024 - 17:00
-Janáčkovo divadlo – Národní divadlo Brno Rooseveltova 31/7 Brno 60200
-542158120 (všední den 8:30-18)
-obchodni@ndbrno.cz
+res = get_parsed_content("""
+URL: https://www.gotobrno.cz/en/events/jazzfestbrno/
+Main header: JazzFestBrno
+JazzFestBrno
+The international festival JazzFestBrno will once again transform Brno into a city of jazz. Music lovers can savour the prospect of hearing the biggest stars in world jazz, progressive musicians from the rising generation, and a selection of some of the republic’s own most exciting.
+21 january–10 may 2024
+Brno
 Tell your friends about this event!
-Interesting places nearby
-Mahen Theatre (Mahenovo divadlo) – National Theatre Brno
-The dramatic ensemble of National Theatre Brno returns
-Reduta – National Theatre Brno
-The oldest theatre in Central Europe, with a progressive spirit
-Brno City Theatre (Městské divadlo Brno)
-This dual-stage repertory theatre hosts musicals and dramas
-""", "https://www.gotobrno.cz/en/othello")
+""")
 print(res)

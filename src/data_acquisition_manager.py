@@ -1,9 +1,11 @@
 import arrow
 
+from src.crawl_only_type_classifier import get_content_type
+from src.parser import get_parsed_content
 from src.sourcesdb import SourcesDB
 from src.web_crawler import WebCrawler
 from src.web_scraper import WebScraper
-from constants import URL, DATE_FORMAT
+from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, BLACK_LIST, TYPE_ID, CRAWL_ONLY
 from bs4 import BeautifulSoup
 
 
@@ -39,7 +41,7 @@ class DataAcquisitionManager:
         sources database and passes them to the web crawler and the web scraper.
         """
 
-        urls_df = self._sources_db.get_all_crawl_only_sources()
+        urls_df = self._sources_db.get_all_crawl_only_sources()  # get also non crawl only later
         for url in urls_df[URL]:
             wc = WebCrawler(url, urls_df['parent'])
             extend_df = wc.get_extend_df()
@@ -49,9 +51,17 @@ class DataAcquisitionManager:
             extend_df = extend_df[~extend_df[URL].isin(existing_urls)]
             for new_url in extend_df[URL]:
                 ws = WebScraper(new_url)
-                extend_df.loc[extend_df[URL] == new_url, 'crawl_only'] = ws.is_crawl_only()
-                # classify type
-                # scrape if not crawl only
+                if not ws.does_html_contain_substrs(BRNO_SUBSTRS):
+                    BLACK_LIST.append(new_url)
+                else:
+                    if ws.is_crawl_only():
+                        extend_df.loc[extend_df[URL] == new_url, CRAWL_ONLY] = True
+                        type_name = get_content_type(ws.html)
+                    else:
+                        content = get_parsed_content(ws.get_clean_text())
+                        type_name = content.record_type
+                    extend_df.loc[extend_df[URL] == new_url, TYPE_ID] = self._sources_db.get_type_id(type_name)
+            extend_df = extend_df[~extend_df[URL].isin(BLACK_LIST)]
             self._sources_db.insert_sources(extend_df)
 
     def _update_existing_urls(self, existing_urls) -> None:

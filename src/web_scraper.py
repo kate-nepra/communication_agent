@@ -6,6 +6,8 @@ from fake_useragent import UserAgent
 import requests
 import copy
 
+from src.constants import BRNO_SUBSTRS
+
 logger = logging.getLogger(__name__)
 
 
@@ -83,14 +85,16 @@ class WebScraper:
     def _apply_decompose_patterns(soup):
         decompose_patterns = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*header.*",
                               ".*navigation.*", ".*menu.*", ".*search.*", ".*intro__scroll.*", ".*vhide.*", ".*icon.*",
-                              ".*logo.*", ".*btn.*", ".*img.*", ".*image.*", ".*f-std.*"]
+                              ".*logo.*", ".*btn.*", ".*img.*", ".*image.*", ".*f-std.*", ".*screen-reader.*"]
         combined_d_pattern = "|".join(decompose_patterns)
 
         for tag in soup.find_all(attrs={"class": re.compile(combined_d_pattern)}):
-            tag.decompose()
+            if tag.name != 'body':
+                tag.decompose()
 
         for tag in soup.find_all(attrs={"id": re.compile(combined_d_pattern)}):
-            tag.decompose()
+            if tag.name != 'body':
+                tag.decompose()
         return soup
 
     @staticmethod
@@ -241,7 +245,7 @@ class WebScraper:
         soup = BeautifulSoup(self.html, 'html.parser')
         title = soup.find('title')
         if title:
-            return title.string
+            return title.get_text(strip=True)
         return None
 
     def get_main_header(self):
@@ -249,7 +253,7 @@ class WebScraper:
         main_header = soup.find('h1') or soup.find('h2') or soup.find('h3') or soup.find('h4') or soup.find(
             'h5') or soup.find('h6')
         if main_header:
-            return main_header.string
+            return main_header.get_text(strip=True)
         return None
 
     def get_decomposed_box_of_links_html(self):
@@ -284,6 +288,18 @@ class WebScraper:
             if len(tag.text) > 100:
                 return False
         return True
+
+    def does_html_contain_substrs(self, substrs: list[str]) -> bool:
+        """
+        This method checks if the html contains any of the substrings.
+        :param substrs: list[str]
+        :return: bool
+        """
+        text = self.get_text_from_html(self.html)
+        for substr in substrs:
+            if substr in text:
+                return True
+        return False
 
     def _slice_html_by_size(self, html, max_size):
         sliced_chunks = []
@@ -322,5 +338,11 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    ws = WebScraper('https://www.gotobrno.cz/en/explore-brno/')
-    print(ws.get_cleaned_html())
+    ws = WebScraper('https://cosedeje.brno.cz/')
+    print('URL:', ws.url)
+    # print('Description:', ws.get_description())
+    # print('Title:', ws.get_title())
+    print('Main header:', ws.get_main_header())
+    print(ws.get_clean_text())
+    if ws.does_html_contain_substrs(BRNO_SUBSTRS):
+        print('ALL GUT')

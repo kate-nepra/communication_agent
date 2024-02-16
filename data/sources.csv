@@ -1,14 +1,10 @@
 url,date_added,crawl_only,record_type,parent
 https://www.gotobrno.cz/en/,1.12.2023,TRUE,event,root
 https://www.brno.cz/,1.12.2023,TRUE,administration,root
-https://en.wikipedia.org/wiki/Brno,1.12.2023,FALSE,static,root
 https://www.mzm.cz/en/,1.12.2023,TRUE,place,root
 https://moravska-galerie.cz/?lang=en,1.12.2023,TRUE,place,root
 https://www.tmbrno.cz/en/,1.12.2023,TRUE,place,root
 https://www.brnoexpatcentre.eu/,1.12.2023,TRUE,administration,root
-https://www.lonelyplanet.com/czech-republic/moravia/brno/attractions,1.12.2023,TRUE,place,root
-https://brightnomad.net/brno-architecture-design/,1.12.2023,TRUE,place,root
 https://www.brno-stred.cz/kalendar-akci,1.12.2023,TRUE,event,root
-https://www.kultura365.cz/?okres=brno-mesto,1.12.2023,TRUE,event,root
 https://www.kudyznudy.cz/vyhledavani?tag=Brno,1.12.2023,TRUE,place,root
-https://www.informuji.cz/akce/jhm/dnes/,1.12.2023,TRUE,event,root
+https://en.wikipedia.org/wiki/Brno,1.12.2023,FALSE,static,root

@@ -20,8 +20,8 @@ class Handler:
 class Agent:
     CONSTANTS = {
         "max_consecutive_auto_reply": 5,
-        "system_message": """You are a helpful AI assistant.
-Solve the task step by step if you need to. If a plan is not provided, explain your plan first. Be clear which step uses function calling and which step uses your language skill.
+        "system_message": """ 
+        Solve the task step by step if you need to. If a plan is not provided, explain your plan first. Be clear which step uses function calling and which step uses your language skill.
 The user cannot provide any other feedback or perform any other action beyond the original task. All the interaction must be done through function calling. So do not ask for user input, unless there is a function specified for that.
 If the result indicates there is an error, fix the error and call the function again. If the error can't be fixed or if the task is not solved even after the several tries, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.
 When you find an answer, verify the answer carefully. Include verifiable evidence in your response if possible.
@@ -57,7 +57,7 @@ Reply "TERMINATE" at the end of the message when everything is done."""
             system_message=self._system_message,
             llm_config={
                 "seed": 42,  # seed for caching and reproducibility
-                "request_timeout": 580,
+                "request_timeout": 1000,
                 "config_list": config_list,  # a list of OpenAI API configurations
                 "temperature": 0,  # temperature for sampling
                 "functions": [f.schema for f in self._functions_wrappers]
