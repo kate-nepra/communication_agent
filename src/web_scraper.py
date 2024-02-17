@@ -6,7 +6,7 @@ from fake_useragent import UserAgent
 import requests
 import copy
 
-from src.constants import BRNO_SUBSTRS
+from src.constants import BRNO_SUBSTRS, FORCED_TAGS
 
 logger = logging.getLogger(__name__)
 
@@ -89,11 +89,11 @@ class WebScraper:
         combined_d_pattern = "|".join(decompose_patterns)
 
         for tag in soup.find_all(attrs={"class": re.compile(combined_d_pattern)}):
-            if tag.name != 'body':
+            if tag.name not in FORCED_TAGS:
                 tag.decompose()
 
         for tag in soup.find_all(attrs={"id": re.compile(combined_d_pattern)}):
-            if tag.name != 'body':
+            if tag.name not in FORCED_TAGS:
                 tag.decompose()
         return soup
 

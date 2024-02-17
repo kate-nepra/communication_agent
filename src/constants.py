@@ -13,3 +13,4 @@ TYPE_ID = 'type_id'
 UPDATE_INTERVAL = 'update_interval'
 
 BRNO_SUBSTRS = ['Brno', 'brno', 'BRNO', 'Brně', 'Brnu', 'Brnem']
+FORCED_TAGS = ['body', 'main', 'html']
