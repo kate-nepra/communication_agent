@@ -119,7 +119,7 @@ class SourcesDB:
         result = self.cursor.fetchall()
         return result
 
-    def get_type_id(self, type_name):
+    def get_type_id(self, type_name) -> int:
         query = f"""SELECT {ID} FROM record_types WHERE {TYPE} = '{type_name}'"""
         self.cursor.execute(query)
         result = self.cursor.fetchone()
@@ -164,11 +164,17 @@ class SourcesDB:
         result = self.cursor.fetchall()
         return result
 
-    def get_existing_from_list(self, url_list):
-        placeholders = ', '.join(['%s' for _ in url_list])
-        query = f"SELECT DISTINCT {URL} FROM sources WHERE {URL} IN ({placeholders})"
-        self.cursor.execute(query, url_list)
-        return self.cursor.fetchall()
+    def get_all_parents(self):
+        query = f"SELECT DISTINCT {PARENT} FROM sources"
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+        return result
+
+    def get_existing_urls_from_list(self, url_list):
+        query = f"SELECT DISTINCT {URL} FROM sources"
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+        return [url for url in url_list if url in result]
 
     def get_sources_by_type_id(self, record_type_id):
         query = f"SELECT {URL} FROM sources WHERE {TYPE_ID} = {record_type_id}"
@@ -184,15 +190,18 @@ class SourcesDB:
     def close_connection(self):
         self.connection.close()
 
-    def update_existing_urls_date(self, existing_urls, date_added):
-        query = f"UPDATE sources SET {DATE_ADDED} = %s WHERE {URL} IN %s"
-        self.cursor.execute(query, (date_added, existing_urls))
+    def update_existing_urls_date(self, existing_urls: list[str], date_added: str):
+        for url in existing_urls:
+            query = "UPDATE sources SET DATE_ADDED = %s WHERE URL = %s"
+            self.cursor.execute(query, (date_added, url))
         self.connection.commit()
 
-    def insert_sources(self, extend_df):
+    def insert_sources(self, extend_df: pd.DataFrame):
+        print(extend_df)
+        data = [tuple(x) for x in extend_df.values]
         query = f""" INSERT INTO sources ({URL}, {DATE_ADDED}, {CRAWL_ONLY}, {PARENT}, {TYPE_ID})
                     VALUES (%s, %s, %s, %s, %s)"""
-        self.cursor.executemany(query, extend_df.values)
+        self.cursor.executemany(query, data)
 
 
 if __name__ == '__main__':

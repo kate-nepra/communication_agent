@@ -19,8 +19,8 @@ class WebCrawler:
         main_url = self._get_parent_part_url(self.url)
         urls = []
         if not self._is_url_in_parents(main_url):
-            urls.append(self._get_nav_urls(html))
-        urls.append(self._get_main_urls(html))
+            urls = (self._get_nav_urls(html))
+        urls.extend(self._get_main_urls(html))
         return self._get_cleaned_df(urls)
 
     def _get_cleaned_df(self, urls):
@@ -42,7 +42,7 @@ class WebCrawler:
                 in
                 urls]
 
-    def _clean_url_list(self, urls):
+    def _clean_url_list(self, urls: list[str]):
         invalid_characters = ["{", "}", "|", "\\", "^", "~", "[", "]", "`", "<", ">", " "]
         for char in invalid_characters:
             urls = self._del_subset(char, urls)

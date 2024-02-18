@@ -1,11 +1,12 @@
 import arrow
+import pandas as pd
 
 from src.crawl_only_type_classifier import get_content_type
 from src.parser import get_parsed_content
 from src.sourcesdb import SourcesDB
 from src.web_crawler import WebCrawler
 from src.web_scraper import WebScraper
-from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, BLACK_LIST, TYPE_ID, CRAWL_ONLY
+from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, BLACK_LIST, TYPE_ID, CRAWL_ONLY, ID, DATE_ADDED, PARENT
 from bs4 import BeautifulSoup
 
 
@@ -27,18 +28,20 @@ class DataAcquisitionManager:
     def _crawl_url(self, url: str, parents: list):
         wc = WebCrawler(url, parents)
         extend_df = wc.get_extend_df()
-        existing_urls = self._sources_db.get_existing_from_list(extend_df[URL])
+        existing_urls = self._sources_db.get_existing_urls_from_list(extend_df[URL].values)
         self._update_existing_urls(existing_urls)
         return extend_df[~extend_df[URL].isin(existing_urls)]
 
-    def acquire_data(self, urls_df) -> None:
+    def acquire_data(self,
+                     urls_df) -> None:  # TODO chci crawlnout určitý typ, ten pak updatnout a scrapenout které nejsou crawl only ale zároveň to vzít z DB??
         """
         This method is the main entry point for the data acquisition process. It retrieves urls from the sources database
         and passes them to the web crawler and the web scraper.
         """
 
+        print(urls_df)
+
         crawl_only_df = urls_df[urls_df[CRAWL_ONLY] == 1]
-        not_crawl_only_df = urls_df[urls_df[CRAWL_ONLY] == 0]
         for url in crawl_only_df[URL]:
             extend_df = self._crawl_url(url, self._sources_db.get_all_parents())
             for new_url in extend_df[URL]:
@@ -52,9 +55,12 @@ class DataAcquisitionManager:
                     else:
                         content = get_parsed_content(ws.get_clean_text())
                         type_name = content.record_type
-                    extend_df.loc[extend_df[URL] == new_url, TYPE_ID] = self._sources_db.get_type_id(type_name)
+                    extend_df.loc[extend_df[URL] == new_url, TYPE_ID] = int(self._sources_db.get_type_id(type_name))
             extend_df = extend_df[~extend_df[URL].isin(BLACK_LIST)]
+            extend_df.to_csv('extend_df.csv', index=False)
             self._sources_db.insert_sources(extend_df)
+
+        not_crawl_only_df = urls_df[urls_df[CRAWL_ONLY] == 0]
 
         for url in not_crawl_only_df[URL]:
             ws = WebScraper(url)
@@ -71,7 +77,8 @@ class DataAcquisitionManager:
         sources database and passes them to the web crawler and the web scraper.
         """
 
-        urls_df = self._sources_db.get_all_sources()
+        urls = self._sources_db.get_all_sources()
+        urls_df = pd.DataFrame(urls, columns=[ID, URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE_ID])
         self.acquire_data(urls_df)
 
     def _update_existing_urls(self, existing_urls) -> None:
