@@ -1,6 +1,6 @@
 import arrow
 
-from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT
+from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT, CRAWL_ONLY
 from src.web_scraper import WebScraper
 from bs4 import BeautifulSoup, Comment
 import pandas as pd
@@ -27,7 +27,11 @@ class WebCrawler:
         urls = self._del_subset('?cat=', urls)
         urls = self._clean_url_list(urls)
         dicts = self._create_urls_dict(urls)
-        return pd.DataFrame(dicts)
+        df = pd.DataFrame(dicts)
+        print(df)
+        df[CRAWL_ONLY] = None
+        df[CRAWL_ONLY] = df[CRAWL_ONLY].astype(bool)
+        return df.drop_duplicates(subset=URL)
 
     def _get_main_urls(self, html):
         soup = BeautifulSoup(html, 'html.parser')

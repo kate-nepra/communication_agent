@@ -28,6 +28,7 @@ class DataAcquisitionManager:
     def _crawl_url(self, url: str, parents: list):
         wc = WebCrawler(url, parents)
         extend_df = wc.get_extend_df()
+        extend_df.to_csv('extend_df.csv', index=False)
         existing_urls = self._sources_db.get_existing_urls_from_list(extend_df[URL].values)
         self._update_existing_urls(existing_urls)
         return extend_df[~extend_df[URL].isin(existing_urls)]
@@ -38,8 +39,6 @@ class DataAcquisitionManager:
         This method is the main entry point for the data acquisition process. It retrieves urls from the sources database
         and passes them to the web crawler and the web scraper.
         """
-
-        print(urls_df)
 
         crawl_only_df = urls_df[urls_df[CRAWL_ONLY] == 1]
         for url in crawl_only_df[URL]:
@@ -53,6 +52,7 @@ class DataAcquisitionManager:
                         extend_df.loc[extend_df[URL] == new_url, CRAWL_ONLY] = True
                         type_name = get_content_type(ws.html)
                     else:
+                        extend_df.loc[extend_df[URL] == new_url, CRAWL_ONLY] = False
                         content = get_parsed_content(ws.get_clean_text())
                         type_name = content.record_type
                     extend_df.loc[extend_df[URL] == new_url, TYPE_ID] = int(self._sources_db.get_type_id(type_name))
@@ -77,8 +77,7 @@ class DataAcquisitionManager:
         sources database and passes them to the web crawler and the web scraper.
         """
 
-        urls = self._sources_db.get_all_sources()
-        urls_df = pd.DataFrame(urls, columns=[ID, URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE_ID])
+        urls_df = self._sources_db.get_all_sources_as_dataframe()
         self.acquire_data(urls_df)
 
     def _update_existing_urls(self, existing_urls) -> None:

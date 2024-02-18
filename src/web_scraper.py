@@ -223,6 +223,8 @@ class WebScraper:
 
     @staticmethod
     def get_text_from_html(html):
+        if not html:
+            return ''
         soup = BeautifulSoup(html, 'html.parser')
         return soup.get_text(strip=True, separator='\n')
 
