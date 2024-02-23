@@ -340,7 +340,7 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    ws = WebScraper('https://cosedeje.brno.cz/')
+    ws = WebScraper('https://www.kudyznudy.cz/vyhledavani?tag=Brno')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())

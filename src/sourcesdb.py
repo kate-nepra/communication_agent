@@ -1,9 +1,11 @@
 import logging
+
+import arrow
+import mysql.connector
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from constants import ID, URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, UPDATE_INTERVAL, TYPE_ID
+from sqlalchemy.orm import sessionmaker, relationship, declarative_base
+from constants import ID, URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, UPDATE_INTERVAL, TYPE_ID, BANNED, DATE_FORMAT
 import pandas as pd
 
 Base = declarative_base()
@@ -22,10 +24,11 @@ class Sources(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String(255), unique=True, nullable=False)
     date_added = Column(Date, nullable=False)
+    date_scraped = Column(Date, nullable=True)
     banned = Column(Boolean, nullable=False, default=False)
-    crawl_only = Column(Boolean)
-    parent = Column(String(255))
-    type_id = Column(Integer, ForeignKey('record_types.id'))
+    crawl_only = Column(Boolean, default=True)
+    parent = Column(String(255), nullable=True)
+    type_id = Column(Integer, ForeignKey('record_types.id'), nullable=True)
     record_type = relationship("RecordTypes")
 
 
@@ -44,7 +47,6 @@ class SourcesDB:
     def add_sources(self, sources):
         source_objects = [Sources(url=s[0], date_added=s[1], crawl_only=s[2], parent=s[3], type_id=s[4]) for s in
                           sources]
-        print(source_objects)
         self.session.add_all(source_objects)
         self.session.commit()
 
@@ -58,6 +60,10 @@ class SourcesDB:
         self.session.add_all(type_objects)
         self.session.commit()
 
+    def insert_blacklisted_sources(self):
+        for url in BANNED:
+            self.add_banned_source(url, arrow.now().format(DATE_FORMAT))
+
     def get_types(self):
         return self.session.query(RecordTypes).all()
 
@@ -70,7 +76,6 @@ class SourcesDB:
         data[TYPE_ID] = data[TYPE].apply(lambda x: self.get_type_id(x))
         data = data[[URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE_ID]]
         csv_sources = [tuple(row) for row in data.values]
-        print(csv_sources)
         self.add_sources(csv_sources)
 
     def insert_types_from_csv(self, file_path):
@@ -78,30 +83,16 @@ class SourcesDB:
         record_types = [tuple(row) for row in data.values]
         self.add_types(record_types)
 
-    def get_next_source(self, _id=0):
-        query = f"SELECT * FROM sources WHERE {ID} > {_id} ORDER BY {ID} LIMIT 1"
-        self.cursor.execute(query, (ID,))
-        result = self.cursor.fetchone()
-        return result
-
-    def get_source_by_id(self, _id):
-        query = f"SELECT * FROM sources WHERE {ID} = {_id}"
-        self.cursor.execute(query)
-        result = self.cursor.fetchone()
-        return result
-
     def get_all_sources(self):
         return self.session.query(Sources).all()
+
+    def get_all_non_banned_sources_as_dataframe(self):
+        df = pd.read_sql(self.session.query(Sources).filter(Sources.banned == False).statement, self.engine)
+        return df
 
     def get_all_sources_as_dataframe(self):
         df = pd.read_sql(self.session.query(Sources).statement, self.session.bind)
         return df
-
-    def get_all_crawl_only_sources(self):
-        query = f"SELECT * FROM sources WHERE {CRAWL_ONLY} != 0"
-        self.cursor.execute(query)
-        result = self.cursor.fetchall()
-        return result
 
     def get_all_parents(self) -> list[str]:
         parents = self.session.query(Sources.parent).distinct().all()
@@ -111,46 +102,35 @@ class SourcesDB:
         query = self.session.query(Sources.url).filter(Sources.url.in_(url_list)).distinct().all()
         return [url[0] for url in query]
 
-    def get_sources_by_type_id(self, record_type_id):
-        query = f"SELECT {URL} FROM sources WHERE {TYPE_ID} = {record_type_id}"
-        self.cursor.execute(query)
-        result = self.cursor.fetchall()
-        return result
-
-    def drop_all_tables(self):
-        query = f"DROP TABLE sources, record_types"
-        self.cursor.execute(query)
-        self.connection.commit()
-
-    def close_connection(self):
-        self.connection.close()
-
     def update_existing_urls_date(self, existing_urls: list[str], date_added: str):
         self.session.query(Sources).filter(Sources.url.in_(existing_urls)).update({Sources.date_added: date_added},
                                                                                   synchronize_session=False)
         self.session.commit()
 
     def insert_sources(self, extend_df: pd.DataFrame):
-        try:
-            for index, row in extend_df.iterrows():
-                source = Sources(
-                    url=row[URL],
-                    date_added=row[DATE_ADDED],
-                    crawl_only=row[CRAWL_ONLY],
-                    parent=row[PARENT],
-                    type_id=row[TYPE_ID]
-                )
-                self.session.add(source)
-            self.session.commit()
-        except IntegrityError as e:
-            self.session.rollback()
-            print(f"IntegrityError occurred: {e}")
+        for index, row in extend_df.iterrows():
+            source = Sources(
+                url=row[URL],
+                date_added=row[DATE_ADDED],
+                crawl_only=row[CRAWL_ONLY],
+                parent=row[PARENT],
+                type_id=row[TYPE_ID]
+            )
+            self.session.add(source)
+        self.session.commit()
+
+    def add_banned_source(self, banned_source: str, date_added: str):
+        print(f"Adding banned source: {banned_source}")
+        self.session.add(Sources(url=banned_source, date_added=date_added, banned=True))
+        self.session.commit()
+
+    def get_banned_urls(self) -> list:
+        banned_urls = self.session.query(Sources.url).filter(Sources.banned == True).all()
+        return [url for url, in banned_urls]
 
 
 if __name__ == '__main__':
     sources = SourcesDB()
-    # sources.insert_types_from_csv('./../data/record_types.csv')
-    # print(sources.get_types())
+    sources.insert_types_from_csv('./../data/record_types.csv')
     sources.insert_sources_from_csv('./../data/sources.csv')
-    # print(sources.get_all_sources())
-    # sources.close_connection()
+    sources.insert_blacklisted_sources()

@@ -92,37 +92,25 @@ def get_parsed_content(html: str) -> BaseSchema:
         return "The static entity was added successfully, you can continue with the further processing."
 
     agent = Agent(api_key="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", model="gpt-3.5-turbo-1106")
-    # openai.api_base = "http://localhost:1234/v1"
-    # openai.api_key = ""
-    # agent = Agent()
 
     agent.add_function(add_place)
     agent.add_function(add_event)
     agent.add_function(add_administration)
     agent.add_function(add_static)
 
-    # completion = openai.ChatCompletion.create(
-    #     model="local-model",  # this field is currently unused
-    #     messages=[
-    #         {"role": "system", "content": "You are a smart HTML to JSON parser."},
-    #         {"role": "user", "content": "Introduce yourself."}
-    #     ]
-    # )
+    # agent.do_conversation(
+    #   f""" You are a smart processor of web-scraped text. Follow these instructions:
+    #   1. Go through the text and extract information from the article
+    #  2. Use the functions with fitting description to transfer the extracted information to pre-defined Schema
+    #  3. Reply "TERMINATE" at the end of the message when everything is done.
+    #  Here is the text to process ```{html}```""")
 
-    # print(completion.choices[0].message)
-
-    agent.do_conversation(
-        f""" You are a smart processor of web-scraped text. Follow these instructions: 
-        1. Go through the text and extract information from the article
-        2. Use the functions with fitting description to transfer the extracted information to pre-defined Schema
-        3. Reply "TERMINATE" at the end of the message when everything is done. 
-        Here is the text to process ```{html}```""")
-    # agent.do_conversation("What functions can you call?")
-
-    return results[0]
+    # return results[0]
+    return BaseSchema("header", "event", "brief", "text", "url", arrow.now().format(DATE_FORMAT))
 
 
-res = get_parsed_content("""
+if __name__ == "__main__":
+    res = get_parsed_content("""
 URL: https://www.gotobrno.cz/en/events/jazzfestbrno/
 Main header: JazzFestBrno
 JazzFestBrno
@@ -131,4 +119,4 @@ The international festival JazzFestBrno will once again transform Brno into a ci
 Brno
 Tell your friends about this event!
 """)
-print(res)
+    print(res)

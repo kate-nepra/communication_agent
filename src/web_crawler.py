@@ -1,6 +1,6 @@
 import arrow
 
-from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT, CRAWL_ONLY
+from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT, CRAWL_ONLY, BANNED_SUBSTRS
 from src.web_scraper import WebScraper
 from bs4 import BeautifulSoup, Comment
 import pandas as pd
@@ -21,6 +21,10 @@ class WebCrawler:
         if not self._is_url_in_parents(main_url):
             urls = (self._get_nav_urls(html))
         urls.extend(self._get_main_urls(html))
+        if not urls:
+            return pd.DataFrame()
+        for ban in BANNED_SUBSTRS:
+            urls = self._del_subset(ban, urls)
         return self._get_cleaned_df(urls)
 
     def _get_cleaned_df(self, urls):
@@ -28,12 +32,13 @@ class WebCrawler:
         urls = self._clean_url_list(urls)
         dicts = self._create_urls_dict(urls)
         df = pd.DataFrame(dicts)
-        print(df)
         df[CRAWL_ONLY] = None
         df[CRAWL_ONLY] = df[CRAWL_ONLY].astype(bool)
         return df.drop_duplicates(subset=URL)
 
     def _get_main_urls(self, html):
+        if not html:
+            return []
         soup = BeautifulSoup(html, 'html.parser')
         main = soup.find('main') or soup.find('body')
         if main:
@@ -56,7 +61,8 @@ class WebCrawler:
         return url in self.parents
 
     def _get_nav_urls(self, html):
-        # get urls from navbar / header / nav in html
+        if not html:
+            return []
         soup = BeautifulSoup(html, 'html.parser')
         nav = soup.find('nav') or soup.find('header') or soup.find('navbar')
         if nav:
