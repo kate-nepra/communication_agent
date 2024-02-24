@@ -15,7 +15,7 @@ class WebCrawler:
         self.parents = parents
 
     def get_extend_df(self) -> pd.DataFrame:
-        html = self.ws.html
+        html = self.ws.get_base_clean_html()
         main_url = self._get_parent_part_url(self.url)
         urls = []
         if not self._is_url_in_parents(main_url):

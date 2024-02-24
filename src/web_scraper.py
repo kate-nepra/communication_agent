@@ -10,6 +10,17 @@ from src.constants import BRNO_SUBSTRS, FORCED_TAGS
 
 logger = logging.getLogger(__name__)
 
+EXCLUDE_TAGS_BASE = [
+    'img', 'style', 'script', 'svg', 'canvas', 'video', 'audio', 'iframe', 'embed', 'object', 'param', 'source',
+    'track', 'map', 'area', 'math', 'use', 'noscript', 'del', 'ins', 'picture', 'figure', 'footer', 'aside', 'form',
+    'input', 'button', 'select', 'textarea', 'label', 'fieldset', 'legend', 'datalist', 'optgroup', 'option', 'output',
+    'progress', 'meter', 'details', 'summary', 'caption', 'colgroup', 'col', 'meta', 'head'
+]
+
+DECOMPOSE_PATTERNS_BASE = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*search.*",
+                           ".*intro__scroll.*", ".*vhide.*", ".*icon.*", ".*logo.*", ".*btn.*", ".*img.*", ".*image.*",
+                           ".*f-std.*", ".*screen-reader.*", ".*interlanguage.*"]
+
 
 class WebScraper:
 
@@ -17,6 +28,7 @@ class WebScraper:
         self.url = url
         self.html = self.scrape_url(url)
         self.cleaned_html = None
+        self.base_clean_html = None
         self.decomposed_box_of_links_html = None
 
     @staticmethod
@@ -54,16 +66,34 @@ class WebScraper:
         return tag.get_text(strip=True) == "" or tag.contents == []
 
     @staticmethod
+    def _apply_decompose_pattern(soup, pattern):
+        for tag in soup.find_all(attrs={"class": re.compile(pattern)}):
+            if tag.name not in FORCED_TAGS:
+                tag.decompose()
+        for tag in soup.find_all(attrs={"id": re.compile(pattern)}):
+            if tag.name not in FORCED_TAGS:
+                tag.decompose()
+        return soup
+
+    def _base_clean(self, soup):
+        for tag in soup.find_all(EXCLUDE_TAGS_BASE):
+            tag.decompose()
+
+        combined_d_pattern = "|".join(DECOMPOSE_PATTERNS_BASE)
+        soup = self._apply_decompose_pattern(soup, combined_d_pattern)
+        return soup
+
+    def get_base_clean_html(self):
+        if not self.base_clean_html:
+            soup = BeautifulSoup(self.html, 'html.parser')
+            soup = self._base_clean(soup)
+            self.base_clean_html = soup.prettify()
+        return self.base_clean_html
+
+    @staticmethod
     def _exclude_tags(soup):
-        exclude_tags = [
-            'img', 'style', 'script', 'svg', 'canvas', 'video', 'audio', 'iframe', 'embed', 'object', 'param',
-            'source', 'track', 'map', 'area', 'math', 'use', 'noscript', 'del', 'ins', 'picture', 'figure',
-            'nav', 'header', 'footer', 'aside', 'form', 'input', 'button', 'select', 'textarea', 'label',
-            'fieldset', 'legend', 'datalist', 'optgroup', 'option', 'output', 'progress', 'meter', 'details',
-            'summary', 'menuitem', 'menu', 'caption', 'colgroup', 'col',
-            'meta', 'head'
-        ]
-        for tag in soup.find_all(exclude_tags):
+        exclude_tags = ['nav', 'header', 'menuitem', 'menu']
+        for tag in soup.find_all(EXCLUDE_TAGS_BASE + exclude_tags):
             tag.decompose()
 
         return soup
@@ -81,20 +111,10 @@ class WebScraper:
             comment.extract()
         return soup
 
-    @staticmethod
-    def _apply_decompose_patterns(soup):
-        decompose_patterns = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*header.*",
-                              ".*navigation.*", ".*menu.*", ".*search.*", ".*intro__scroll.*", ".*vhide.*", ".*icon.*",
-                              ".*logo.*", ".*btn.*", ".*img.*", ".*image.*", ".*f-std.*", ".*screen-reader.*"]
-        combined_d_pattern = "|".join(decompose_patterns)
-
-        for tag in soup.find_all(attrs={"class": re.compile(combined_d_pattern)}):
-            if tag.name not in FORCED_TAGS:
-                tag.decompose()
-
-        for tag in soup.find_all(attrs={"id": re.compile(combined_d_pattern)}):
-            if tag.name not in FORCED_TAGS:
-                tag.decompose()
+    def _decompose_patterns(self, soup):
+        decompose_patterns = [".*header.*", ".*navigation.*", ".*menu.*", ]
+        combined_d_pattern = "|".join(DECOMPOSE_PATTERNS_BASE + decompose_patterns)
+        soup = self._apply_decompose_pattern(soup, combined_d_pattern)
         return soup
 
     @staticmethod
@@ -126,7 +146,7 @@ class WebScraper:
         soup = BeautifulSoup(html, 'html.parser')
         soup = self._extract_comments(soup)
         soup = self._exclude_tags(soup)
-        soup = self._apply_decompose_patterns(soup)
+        soup = self._decompose_patterns(soup)
         soup = self._apply_unwrap_patterns(soup)
         soup = self._unwrap_tags(soup)
         soup = self._decompose_empty_tags(soup)
@@ -267,7 +287,7 @@ class WebScraper:
             html = soup.prettify()
             html = self._decompose_box_of_links(html)
             soup = BeautifulSoup(html, 'html.parser')
-            soup = self._apply_decompose_patterns(soup)
+            soup = self._decompose_patterns(soup)
             soup = self._apply_unwrap_patterns(soup)
             soup = self._unwrap_tags(soup)
             soup = self._decompose_empty_tags(soup)
@@ -340,11 +360,9 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    ws = WebScraper('https://www.kudyznudy.cz/vyhledavani?tag=Brno')
+    ws = WebScraper('https://en.wikipedia.org/wiki/Brno')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())
     print('Main header:', ws.get_main_header())
-    print(ws.get_clean_text())
-    if ws.does_html_contain_substrs(BRNO_SUBSTRS):
-        print('ALL GUT')
+    print(ws.get_base_clean_html())

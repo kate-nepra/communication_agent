@@ -2,7 +2,7 @@ BANNED = ['https://www.bam.brno.cz/literatura', 'https://www.bam.brno.cz/archite
           'https://www.bam.brno.cz/umelec', 'https://www.brno.cz/mestske-organizace',
           'https://mzm-en.pano3d.cz/', 'https://mk.gov.cz/', 'https://www.redhat.com/en', 'https://objednani.brno.cz/',
           'https://www.mkcr.cz/', 'https://www.brno-stred.cz/kalendar-akci', 'https://www.proverenoseniory.cz/',
-          'https://www.mpsv.cz/', ' https://www.cssz.cz/']
+          'https://www.mpsv.cz/', ' https://www.cssz.cz/', 'https://www.brnoexpatcentre.eu/newsletter/']
 
 BANNED_SUBSTRS = ['facebook', 'jobs', 'goout', 'mailto', 'twitter', 'instagram', 'linkedin',
                   'weblist-mzm', 'netscout', '/careers/']

@@ -1,12 +1,11 @@
 import logging
 
 import arrow
-import mysql.connector
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import sessionmaker, relationship, declarative_base
-from constants import ID, URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, UPDATE_INTERVAL, TYPE_ID, BANNED, DATE_FORMAT
 import pandas as pd
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
+from sqlalchemy.orm import sessionmaker, relationship, declarative_base
+
+from constants import URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, TYPE_ID, BANNED, DATE_FORMAT
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
@@ -86,8 +85,10 @@ class SourcesDB:
     def get_all_sources(self):
         return self.session.query(Sources).all()
 
-    def get_all_non_banned_sources_as_dataframe(self):
-        df = pd.read_sql(self.session.query(Sources).filter(Sources.banned == False).statement, self.engine)
+    def get_all_non_banned_non_static_non_pdf_sources_as_dataframe(self):
+        df = pd.read_sql(self.session.query(Sources).filter(Sources.banned.is_(False)).filter(
+            Sources.record_type.has(RecordTypes.record_type != 'static')).filter(
+            Sources.record_type.has(RecordTypes.record_type != 'pdf')).statement, self.session.bind)
         return df
 
     def get_all_sources_as_dataframe(self):
@@ -110,7 +111,7 @@ class SourcesDB:
     def insert_sources(self, extend_df: pd.DataFrame):
         for index, row in extend_df.iterrows():
             source = Sources(
-                url=row[URL],
+                url=row[URL] if len(row[URL]) <= 255 else row[URL][:255],
                 date_added=row[DATE_ADDED],
                 crawl_only=row[CRAWL_ONLY],
                 parent=row[PARENT],
