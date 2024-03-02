@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
-from constants import URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, TYPE_ID, BANNED, DATE_FORMAT
+from constants import URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, TYPE_ID, DATE_SCRAPED
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class Sources(Base):
     date_added = Column(Date, nullable=False)
     date_scraped = Column(Date, nullable=True)
     banned = Column(Boolean, nullable=False, default=False)
-    crawl_only = Column(Boolean, default=True)
+    crawl_only = Column(Boolean, nullable=True, default=True)
     parent = Column(String(255), nullable=True)
     type_id = Column(Integer, ForeignKey('record_types.id'), nullable=True)
     record_type = relationship("RecordTypes")
@@ -59,10 +59,6 @@ class SourcesDB:
         self.session.add_all(type_objects)
         self.session.commit()
 
-    def insert_blacklisted_sources(self):
-        for url in BANNED:
-            self.add_banned_source(url, arrow.now().format(DATE_FORMAT))
-
     def get_types(self):
         return self.session.query(RecordTypes).all()
 
@@ -82,6 +78,11 @@ class SourcesDB:
         record_types = [tuple(row) for row in data.values]
         self.add_types(record_types)
 
+    def insert_banned_sources_from_csv(self, file_path):
+        data = pd.read_csv(file_path)
+        for index, row in data.iterrows():
+            self.add_banned_source(row[URL], row[DATE_ADDED])
+
     def get_all_sources(self):
         return self.session.query(Sources).all()
 
@@ -93,6 +94,11 @@ class SourcesDB:
 
     def get_all_sources_as_dataframe(self):
         df = pd.read_sql(self.session.query(Sources).statement, self.session.bind)
+        return df
+
+    def get_all_static_sources_as_dataframe(self):
+        df = pd.read_sql(self.session.query(Sources).filter(
+            Sources.record_type.has(RecordTypes.record_type == 'static')).statement, self.session.bind)
         return df
 
     def get_all_parents(self) -> list[str]:
@@ -113,11 +119,23 @@ class SourcesDB:
             source = Sources(
                 url=row[URL] if len(row[URL]) <= 255 else row[URL][:255],
                 date_added=row[DATE_ADDED],
+                date_scraped=row[DATE_SCRAPED],
                 crawl_only=row[CRAWL_ONLY],
                 parent=row[PARENT],
                 type_id=row[TYPE_ID]
             )
             self.session.add(source)
+        self.session.commit()
+
+    def update_sources(self, extend_df: pd.DataFrame):
+        for index, row in extend_df.iterrows():
+            self.session.query(Sources).filter(Sources.url == row[URL]).update({
+                Sources.date_added: row[DATE_ADDED],
+                Sources.date_scraped: row[DATE_SCRAPED],
+                Sources.crawl_only: row[CRAWL_ONLY],
+                Sources.parent: row[PARENT],
+                Sources.type_id: row[TYPE_ID]
+            }, synchronize_session=False)
         self.session.commit()
 
     def add_banned_source(self, banned_source: str, date_added: str):
@@ -126,7 +144,7 @@ class SourcesDB:
         self.session.commit()
 
     def get_banned_urls(self) -> list:
-        banned_urls = self.session.query(Sources.url).filter(Sources.banned == True).all()
+        banned_urls = self.session.query(Sources.url).filter(Sources.banned.is_(True)).all()
         return [url for url, in banned_urls]
 
 
@@ -134,4 +152,4 @@ if __name__ == '__main__':
     sources = SourcesDB()
     sources.insert_types_from_csv('./../data/record_types.csv')
     sources.insert_sources_from_csv('./../data/sources.csv')
-    sources.insert_blacklisted_sources()
+    sources.insert_banned_sources_from_csv('./../data/banned_sources.csv')

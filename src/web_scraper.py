@@ -6,7 +6,7 @@ from fake_useragent import UserAgent
 import requests
 import copy
 
-from src.constants import BRNO_SUBSTRS, FORCED_TAGS
+from src.constants import BRNO_SUBSTRS, FORCED_TAGS, MAX_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +14,17 @@ EXCLUDE_TAGS_BASE = [
     'img', 'style', 'script', 'svg', 'canvas', 'video', 'audio', 'iframe', 'embed', 'object', 'param', 'source',
     'track', 'map', 'area', 'math', 'use', 'noscript', 'del', 'ins', 'picture', 'figure', 'footer', 'aside', 'form',
     'input', 'button', 'select', 'textarea', 'label', 'fieldset', 'legend', 'datalist', 'optgroup', 'option', 'output',
-    'progress', 'meter', 'details', 'summary', 'caption', 'colgroup', 'col', 'meta', 'head'
+    'progress', 'meter', 'details', 'summary', 'caption', 'colgroup', 'col', 'meta', 'head', 'cite', 'abbr', 'acronym',
 ]
 
 DECOMPOSE_PATTERNS_BASE = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*search.*",
                            ".*intro__scroll.*", ".*vhide.*", ".*icon.*", ".*logo.*", ".*btn.*", ".*img.*", ".*image.*",
-                           ".*f-std.*", ".*screen-reader.*", ".*interlanguage.*"]
+                           ".*f-std.*", ".*screen-reader.*", ".*interlanguage.*", ".*login.*", ".*register.*",
+                           ".*hidden.*", ".*accordion.*", ".*actions.*", ".*jump.*"]
+
+WIKI_SPECIFIC = [".*ib-settlement-caption.*", ".*wikitable.*", ".*Gallery.*", ".*toccolours.*", ".*References.*",
+                 ".*Notes.*", ".*Further reading.*", ".*External links.*", ".*See_also.*", ".*Coordinates.*",
+                 ".*Authority control.*", ".*Bibliography.*"]
 
 
 class WebScraper:
@@ -112,8 +117,9 @@ class WebScraper:
         return soup
 
     def _decompose_patterns(self, soup):
-        decompose_patterns = [".*header.*", ".*navigation.*", ".*menu.*", ]
-        combined_d_pattern = "|".join(DECOMPOSE_PATTERNS_BASE + decompose_patterns)
+        decompose_patterns = [".*header.*", ".*navigation.*", ".*menu.*", ".*navbox.*", ".*edit.*",
+                              ".*cite.*"]
+        combined_d_pattern = "|".join(DECOMPOSE_PATTERNS_BASE + WIKI_SPECIFIC + decompose_patterns)
         soup = self._apply_decompose_pattern(soup, combined_d_pattern)
         return soup
 
@@ -123,7 +129,7 @@ class WebScraper:
                            ".*main.*", ".*article.*", ".*section.*", ".*aside.*", ".*u-mw.*", ".*u-mh.*", ".*u-mt.*",
                            ".*u-mb.*", ".*u-ml.*", ".*u-mr.*", ".*u-p.*", ".*u-pt.*", ".*u-pb.*", ".*u-pl.*",
                            ".*u-pr.*", ".*u-pv.*", ".*u-ph.*", ".*u-ta.*", ".*u-tl.*", ".*u-tr.*", ".*u-tc.*",
-                           ".*u-tj.*", ".*u-tv.*", ".*u-dib.*", ".*u-dit.*", ".*u-dib.*", ".*u-dn.*", ]
+                           ".*u-tj.*", ".*u-tv.*", ".*u-dib.*", ".*u-dit.*", ".*u-dib.*", ".*u-dn.*"]
 
         combined_u_pattern = "|".join(unwrap_patterns)
 
@@ -181,7 +187,8 @@ class WebScraper:
     def _unwrap_unnecessary_tags(html):
         soup = BeautifulSoup(html, 'html.parser')
         for tag in soup.find_all():
-            if tag.parent.name != 'body' and len(tag.find_all(recursive=False)) == 1 and tag.name != 'a':
+            if tag.parent.name != 'body' and len(tag.find_all()) == 1 and tag.name not in ['a', 'p', 'div', 'h1', 'h2',
+                                                                                           'h3', 'h4', 'h5', 'h6']:
                 tag.unwrap()
         return soup.prettify()
 
@@ -220,10 +227,12 @@ class WebScraper:
 
     @staticmethod
     def _is_header(element) -> bool:
-        return element and element.name and (
-                element.name.startswith('h') or ".*header.*" in element.attrs.get('class', []) or \
-                ".*header.*" in element.attrs.get('id', []) or ".*header.*" in element.attrs.get('style',
-                                                                                                 []))
+        if element and element.name:
+            class_attr = ' '.join(element.attrs.get('class', []))
+            id_attr = ' '.join(element.attrs.get('id', []))
+            style_attr = ' '.join(element.attrs.get('style', []))
+            return element.name.startswith('h') or "head" in class_attr or "head" in id_attr or "head" in style_attr
+        return False
 
     def _is_only_child_header(self, element) -> bool:
         if not element.name:
@@ -235,11 +244,28 @@ class WebScraper:
             return self._is_only_child_header(children[0])
         return False
 
-    def get_clean_text(self):
+    def _get_text(self, soup):
+        text = soup.get_text(strip=True, separator='\n')
+        if 'gotobrno.cz/en/' in self.url:
+            index = text.find('Tell your friends about')
+            if index != -1:
+                text = text[:index]
+        if 'wikipedia.org' in self.url:
+            index = text.find('References')
+            if index != -1:
+                text = text[:index]
+        if '/en' in self.url:
+            index = text.find('Other languages')
+            if index != -1:
+                text = text[:index]
+        return text
+
+    def get_clean_texts(self, max_size=MAX_SIZE) -> list[str]:
         soup = BeautifulSoup(self.get_cleaned_html(), 'html.parser')
-        # text = soup.get_text(strip=True, separator=' | ')
-        # return re.sub(r'(\s*\|\s*){2,}', ' | ', text)
-        return soup.get_text(strip=True, separator='\n')
+        text = self._get_text(soup)
+        if len(text) > max_size:
+            return self._get_cleaned_html_sliced_by_headers(max_size)
+        return [text]
 
     @staticmethod
     def get_text_from_html(html):
@@ -309,6 +335,8 @@ class WebScraper:
         for tag in soup.find_all():
             if len(tag.text) > 100:
                 return False
+        if len(self.get_clean_texts()) > 500:
+            return False
         return True
 
     def does_html_contain_substrs(self, substrs: list[str]) -> bool:
@@ -358,6 +386,38 @@ class WebScraper:
 
         return sliced_chunks
 
+    @staticmethod
+    def _slice_by_name(html, name):
+        soup = BeautifulSoup(html, 'html.parser')
+        slices = []
+        for tag in soup.find_all(name):
+            slices.append(str(soup)[:str(soup).find(str(tag))])
+            soup = BeautifulSoup(str(soup)[str(soup).find(str(tag)):], 'html.parser')
+        return slices
+
+    def _get_cleaned_html_sliced_by_headers(self, max_size):
+        html = self.get_cleaned_html()
+        slices = self._slice_by_name(html, 'h2')
+        if slices:
+            for s in slices:
+                soup = BeautifulSoup(s, 'html.parser')
+                if len(soup.get_text()) > max_size:
+                    slices.remove(s)
+                    slices.extend(self._slice_by_name(s, 'h3'))
+            for s in slices:
+                soup = BeautifulSoup(s, 'html.parser')
+                if len(soup.get_text()) > max_size:
+                    slices.remove(s)
+                    slices.extend(self._slice_by_name(s, 'h4'))
+            for s in slices:
+                soup = BeautifulSoup(s, 'html.parser')
+                if len(soup.get_text()) > max_size:
+                    slices.remove(s)
+                    slices.extend(self._slice_html_by_size(s, max_size))
+        else:
+            slices = self._slice_html_by_size(html, max_size)
+        return [s for s in slices if s.strip() != '']
+
 
 if __name__ == '__main__':
     ws = WebScraper('https://en.wikipedia.org/wiki/Brno')
@@ -365,4 +425,7 @@ if __name__ == '__main__':
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())
     print('Main header:', ws.get_main_header())
-    print(ws.get_base_clean_html())
+    chunks = ws.get_clean_texts()
+    for chunk in chunks:
+        print('-------------------------------------------------------------------')
+        print('Chunk:', chunk)

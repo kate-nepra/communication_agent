@@ -25,7 +25,7 @@ class WebCrawler:
             return pd.DataFrame()
         for ban in BANNED_SUBSTRS:
             urls = self._del_subset(ban, urls)
-        return self._get_cleaned_df(urls)
+        return self._get_cleaned_df(urls).drop_duplicates()
 
     def _get_cleaned_df(self, urls):
         urls = self._del_subset('?cat=', urls)
@@ -60,22 +60,25 @@ class WebCrawler:
     def _is_url_in_parents(self, url):
         return url in self.parents
 
-    def _get_nav_urls(self, html):
+    @staticmethod
+    def _get_nav_urls(html):
         if not html:
             return []
         soup = BeautifulSoup(html, 'html.parser')
-        nav = soup.find('nav') or soup.find('header') or soup.find('navbar')
+        nav = soup.find('header') or soup.find('nav') or soup.find('navbar')
         if nav:
             urls = [a['href'] for a in nav.find_all('a', href=True)]
             return urls
         return []
 
-    def _get_parent_part_url(self, url):
+    @staticmethod
+    def _get_parent_part_url(url):
         parsed_url = urlparse(url)
         parent_url = urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', ''))
         return parent_url
 
-    def _del_subset(self, substr, urls):
+    @staticmethod
+    def _del_subset(substr, urls):
         return [url for url in urls if substr not in url]
 
 
