@@ -24,7 +24,13 @@ class DataAcquisitionManager:
     def __init__(self, sources_db: SourcesDB):
         self._sources_db = sources_db
 
-    def _crawl_url(self, url: str, parents: list):
+    def _crawl_url(self, url: str, parents: list) -> pd.DataFrame:
+        """
+        This method is responsible for passing the url to the web crawler and getting the new urls.
+        :param url: Url to be crawled
+        :param parents: List of existing parent urls
+        :return: DataFrame with the new urls
+        """
         wc = WebCrawler(url, parents)
         extend_df = wc.get_extend_df()
         if extend_df.empty:
@@ -51,10 +57,21 @@ class DataAcquisitionManager:
             acquired = pd.DataFrame()
             for url in urls:
                 new_df = self._get_new_urls_from_url(url, file)
+                new_df.to_csv('new_df.csv', index=False)
                 self._sources_db.insert_sources(new_df)  # TODO may be update not insert
                 acquired = pd.concat([acquired, new_df])
             acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
             return acquired
+
+    def _update_urls(self, urls: list) -> pd.DataFrame:
+        acquired = pd.DataFrame()
+        for url in urls:
+            new_df = self._get_new_urls_from_url(url)
+            new_df.to_csv('new_df.csv', index=False)
+            self._sources_db.update_sources(new_df)
+            acquired = pd.concat([acquired, new_df])
+        acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
+        return acquired
 
     def initial_data_acquisition(self) -> None:
         """
@@ -72,7 +89,7 @@ class DataAcquisitionManager:
         self._scrape_and_update_sources(to_scrape)
         self.acquire_data(urls_df)
 
-    def _is_banned(self, ws, new_url, banned) -> bool:
+    def _is_banned(self, ws: WebScraper, new_url: str, banned: list) -> bool:
         if not ws.does_html_contain_substrs(BRNO_SUBSTRS):
             self._sources_db.add_banned_source(new_url, arrow.now().format(DATE_FORMAT))
             banned.append(new_url)
@@ -86,48 +103,45 @@ class DataAcquisitionManager:
         self._sources_db.update_existing_urls_date(existing_urls, arrow.now().format(DATE_FORMAT))
 
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
-        with open('output.txt', 'a') as file:  # TODO just scrape them
-            for url in to_scrape[URL]:
-                ws = WebScraper(url)
-                if self._is_banned(ws, url, []):
-                    continue
-                for t in ws.get_clean_texts():
-                    content = get_parsed_content(t)
-                    file.write(
-                        url + '---------------------------------------------------------------------------------------------------------------------' + '\n')
-                    file.write(ws.get_clean_texts() + '\n')
-                    type_name = content.record_type
-                    to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self._sources_db.get_type_id(type_name)
-                    to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
+        for url in to_scrape[URL]:
+            print('URL: ' + url)
+            ws = WebScraper(url)
+            if self._is_banned(ws, url, []):
+                continue
+            for t in ws.get_clean_texts():
+                content = get_parsed_content(url, t)
+                type_name = content.record_type
+                to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self._sources_db.get_type_id(type_name)
+                to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
         self._sources_db.update_sources(to_scrape)
 
     @staticmethod
-    def _remove_banned(banned, extend_df):
+    def _remove_banned(banned: list, extend_df: pd.DataFrame) -> pd.DataFrame:
         extend_df = extend_df[~extend_df[URL].isin(banned)]
         for ban in banned:
             extend_df = extend_df[~extend_df[URL].str.contains(ban, regex=False)]
         return extend_df
 
-    def _handle_pdf(self, url, parent_url):
+    def _handle_pdf(self, url: str, parent_url: str) -> None:
         if 'gotobrno' in parent_url:
             self._sources_db.add_source(url, arrow.now().format(DATE_FORMAT), None, None,
                                         int(self._sources_db.get_type_id('pdf')))
 
-    def _process_non_crawl_only(self, new_url, ws, file):
+    def _process_non_crawl_only(self, new_url: str, ws: WebScraper, file) -> list[[bool, int, str]]:
+        results = []
         for t in ws.get_clean_texts():
-            content = get_parsed_content(t)
-            file.write(
-                new_url + '---------------------------------------------------------------------------------------------------------------------' + '\n')
-            file.write(ws.get_clean_texts() + '\n')
+            content = get_parsed_content(new_url, t)
             type_id = self._sources_db.get_type_id(content.record_type)
-        return False, type_id, arrow.now().format(DATE_FORMAT)  # TODO
+            results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
+        return results
 
-    def _get_new_urls_from_url(self, url, file) -> pd.DataFrame:
+    def _get_new_urls_from_url(self, url: str, file) -> pd.DataFrame:
         new_urls = self._crawl_url(url, self._sources_db.get_all_parents())
         if new_urls.empty:
             return new_urls
         new_urls = self._remove_banned(self._sources_db.get_banned_urls(), new_urls)
         new_urls[DATE_SCRAPED] = None
+        new_urls[TYPE_ID] = None
 
         print('URL: ' + url)
         print('EXTEND DF:')
@@ -136,7 +150,7 @@ class DataAcquisitionManager:
         # TODO insert into vecDB - do it directly in the parser??
         return new_urls
 
-    def _process_new_urls(self, new_urls, parent_url, file) -> (pd.DataFrame, list[str]):
+    def _process_new_urls(self, new_urls: pd.DataFrame, parent_url: str, file) -> pd.DataFrame:
         banned = []
         for new_url in new_urls[URL]:
             if (new_url[-4:] == '.pdf') or (new_url[-4:] == '.PDF'):
@@ -151,10 +165,11 @@ class DataAcquisitionManager:
                     type_id = int(self._sources_db.get_type_id(get_content_type(ws.html)))
                     new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
                 else:
-                    crawl_only, type_id, date_scraped = self._process_non_crawl_only(new_url, ws, file)
-                    new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, DATE_SCRAPED, TYPE_ID]] = [crawl_only,
-                                                                                                   date_scraped,
-                                                                                                   type_id]
+                    processed = self._process_non_crawl_only(new_url, ws, file)
+                    for crawl_only, type_id, date_scraped in processed:
+                        new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, DATE_SCRAPED, TYPE_ID]] = [crawl_only,
+                                                                                                       date_scraped,
+                                                                                                       type_id]
         new_urls = self._remove_banned(banned, new_urls)
         return new_urls
 

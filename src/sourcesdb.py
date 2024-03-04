@@ -1,6 +1,4 @@
 import logging
-
-import arrow
 import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base

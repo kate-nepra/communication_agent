@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Any, Callable
 from openai_functions import FunctionWrapper
 import autogen

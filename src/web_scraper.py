@@ -19,8 +19,8 @@ EXCLUDE_TAGS_BASE = [
 
 DECOMPOSE_PATTERNS_BASE = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*search.*",
                            ".*intro__scroll.*", ".*vhide.*", ".*icon.*", ".*logo.*", ".*btn.*", ".*img.*", ".*image.*",
-                           ".*f-std.*", ".*screen-reader.*", ".*interlanguage.*", ".*login.*", ".*register.*",
-                           ".*hidden.*", ".*accordion.*", ".*actions.*", ".*jump.*"]
+                           ".*f-std.*", ".*screen-reader.*", ".*lang.*", ".*login.*", ".*register.*", ".*noprint.*",
+                           ".*hidden.*", ".*accordion.*", ".*actions.*", ".*jump.*", ".*shop.*", ".*cart.*"]
 
 WIKI_SPECIFIC = [".*ib-settlement-caption.*", ".*wikitable.*", ".*Gallery.*", ".*toccolours.*", ".*References.*",
                  ".*Notes.*", ".*Further reading.*", ".*External links.*", ".*See_also.*", ".*Coordinates.*",
@@ -264,7 +264,7 @@ class WebScraper:
         soup = BeautifulSoup(self.get_cleaned_html(), 'html.parser')
         text = self._get_text(soup)
         if len(text) > max_size:
-            return self._get_cleaned_html_sliced_by_headers(max_size)
+            return self._get_cleaned_html_text_sliced_by_headers(max_size)
         return [text]
 
     @staticmethod
@@ -351,38 +351,27 @@ class WebScraper:
                 return True
         return False
 
-    def _slice_html_by_size(self, html, max_size):
+    @staticmethod
+    def _slice_html_by_size(html, max_size):
         sliced_chunks = []
+        current_chunk = ''
+        current_length = 0
+        print('SIZE SLICING')
         soup = BeautifulSoup(html, 'html.parser')
 
-        def slice_element(element, current_size):
-            if current_size + len(element.prettify()) <= max_size:
-                current_size += len(element.prettify())
-                return element.prettify(), current_size
-            else:
-                return None, current_size
+        for tag in soup.find_all():
+            if len(tag.get_text(strip=True)) > max_size:
+                tag.unwrap()
 
-        def slice_html(node, current_size, chunk, last_header=''):
-            for child in node.children:
-                if child.name is not None:
-                    if self._is_only_child_header(child):
-                        last_header += child.prettify()
-                        continue
-                    elif last_header != '':
-                        child = BeautifulSoup(last_header + child.prettify(), 'html.parser')
-                        last_header = ''
-
-                    chunk_part, current_size = slice_element(child, current_size)
-                    if chunk_part:
-                        chunk += chunk_part
-                    else:
-                        sliced_chunks.append(chunk)
-                        chunk = child.prettify()  # TODO: fix too long chunks
-                        current_size = len(chunk)
-            if chunk:
-                sliced_chunks.append(chunk)
-
-        slice_html(soup, 0, '')
+        for tag in soup.find_all(recursive=False):
+            if current_length + len(tag.get_text().strip()) > max_size:
+                sliced_chunks.append(current_chunk)
+                current_chunk = ''
+                current_length = 0
+            current_chunk += str(tag).strip()
+            current_length += len(tag.get_text(strip=True))
+        if current_chunk:
+            sliced_chunks.append(current_chunk)
 
         return sliced_chunks
 
@@ -390,37 +379,50 @@ class WebScraper:
     def _slice_by_name(html, name):
         soup = BeautifulSoup(html, 'html.parser')
         slices = []
+        pretty_soup = str(soup.prettify())
         for tag in soup.find_all(name):
-            slices.append(str(soup)[:str(soup).find(str(tag))])
-            soup = BeautifulSoup(str(soup)[str(soup).find(str(tag)):], 'html.parser')
-        return slices
+            if pretty_soup.find(str(tag)) == 0:
+                break
+            slices.append(pretty_soup[:pretty_soup.find(str(tag))])
+            pretty_soup = pretty_soup[pretty_soup.find(str(tag)):]
+        slices.append(pretty_soup)
+        print('Slices:', slices)
+        return slices if slices else [html]
 
-    def _get_cleaned_html_sliced_by_headers(self, max_size):
+    def _get_cleaned_html_text_sliced_by_headers(self, max_size):
         html = self.get_cleaned_html()
         slices = self._slice_by_name(html, 'h2')
-        if slices:
-            for s in slices:
-                soup = BeautifulSoup(s, 'html.parser')
-                if len(soup.get_text()) > max_size:
-                    slices.remove(s)
-                    slices.extend(self._slice_by_name(s, 'h3'))
-            for s in slices:
-                soup = BeautifulSoup(s, 'html.parser')
-                if len(soup.get_text()) > max_size:
-                    slices.remove(s)
-                    slices.extend(self._slice_by_name(s, 'h4'))
-            for s in slices:
-                soup = BeautifulSoup(s, 'html.parser')
-                if len(soup.get_text()) > max_size:
-                    slices.remove(s)
-                    slices.extend(self._slice_html_by_size(s, max_size))
-        else:
-            slices = self._slice_html_by_size(html, max_size)
-        return [s for s in slices if s.strip() != '']
+        for s in slices:
+            soup = BeautifulSoup(s, 'html.parser')
+            if len(soup.get_text()) > max_size:
+                slices.remove(s)
+                slices.extend(self._slice_by_name(s, 'h3'))
+        for s in slices:
+            soup = BeautifulSoup(s, 'html.parser')
+            if len(soup.get_text()) > max_size:
+                print('------------------------------------------')
+                print(len(soup.get_text()))
+                print(s)
+
+                break
+                slices.remove(s)
+                slices.extend(self._slice_html_by_size(s, max_size))
+        current_chunk = ''
+        result = []
+        for s in slices:
+            text = self._get_text(BeautifulSoup(s, 'html.parser'))
+            if len(current_chunk) + len(text) > max_size:
+                result.append(current_chunk)
+                current_chunk = ''
+            current_chunk += text
+        if current_chunk:
+            result.append(current_chunk)
+        return result
 
 
 if __name__ == '__main__':
-    ws = WebScraper('https://en.wikipedia.org/wiki/Brno')
+    ws = WebScraper(
+        'https://cosedeje.brno.cz/w/odpoledni-taborak-motosalon-ci-roboti-ve-vida-objevte-co-prinasi-vikend')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())
@@ -428,4 +430,5 @@ if __name__ == '__main__':
     chunks = ws.get_clean_texts()
     for chunk in chunks:
         print('-------------------------------------------------------------------')
+        print('Length:', len(chunk))
         print('Chunk:', chunk)
