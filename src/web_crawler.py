@@ -28,7 +28,6 @@ class WebCrawler:
         return self._get_cleaned_df(urls).drop_duplicates()
 
     def _get_cleaned_df(self, urls):
-        urls = self._del_subset('?cat=', urls)
         urls = self._clean_url_list(urls)
         dicts = self._create_urls_dict(urls)
         df = pd.DataFrame(dicts)
@@ -55,6 +54,9 @@ class WebCrawler:
         invalid_characters = ["{", "}", "|", "\\", "^", "~", "[", "]", "`", "<", ">", " "]
         for char in invalid_characters:
             urls = self._del_subset(char, urls)
+        invalid_suffixes = [".jpg", ".png", ".jpeg", ".gif", ".svg", ".mp4", ".mp3", ".avi", ".mov", ".aspx"]
+        for suffix in invalid_suffixes:
+            urls = self._del_subset(suffix, urls)
         return [url for url in urls if url.startswith('http') or url.startswith('www')]
 
     def _is_url_in_parents(self, url):

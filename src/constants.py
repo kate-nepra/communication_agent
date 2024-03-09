@@ -1,5 +1,7 @@
-BANNED_SUBSTRS = ['facebook', 'jobs', 'goout', 'mailto', 'twitter', 'instagram', 'linkedin',
-                  'weblist-mzm', 'netscout', '/careers', '/kariera', 'shop', 'newsletter', 'blog/page']
+BANNED_SUBSTRS = ['facebook', 'jobs', 'goout', 'mailto', 'twitter', 'instagram', 'linkedin', 'google', 'shop',
+                  '/partners', 'cat=', 'view=', 'search=', 'youtu', 'obchod', 'flickr', 'brno-phenomenon', 'apple',
+                  'phaenomen-bruenn', 'fenomen-brno', 'weblist-mzm', 'netscout', '/careers', '/kariera', 'gle',
+                  'newsletter', 'blog/page', 'kamera']
 
 ROOT = 'root'
 

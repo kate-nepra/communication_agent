@@ -1,4 +1,5 @@
 import datetime
+import json
 from dataclasses import dataclass
 import openai
 from agent.agent import Agent
@@ -42,8 +43,13 @@ class Duration:
     end: str = None
 
 
-def get_parsed_content(url: str, html: str) -> BaseSchema:
+def get_parsed_content(url: str, content: str) -> BaseSchema:
     results: list[BaseSchema] = []
+
+    # append text to file output.txt
+    with open("output.txt", 'a') as file:
+        file.write(f'\n{url} ----------------------------------------------------------------\n')
+        file.write(content)
 
     def add_place(header: str, text: str, brief: str, address: str, url: str) -> str:
         """ Call this function if you encounter entity that is a place or destination in or near Brno city, such as restaurant, café, bar, bakery, museum, tour, greenery, church, castle, university, kino, theatre or similar.
@@ -84,7 +90,7 @@ def get_parsed_content(url: str, html: str) -> BaseSchema:
     def add_static(header: str, text: str, brief: str, url: str) -> str:
         """ Call this function if you encounter entity that contains blog post, an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative.
         Use provided or generate a header more fitting the found text.
-        If you encounter a descriptive text of the administrative entity assign it as the text.
+        If you encounter a descriptive text of the entity assign it as the text.
         Create a brief which is a sum up of the text no longer than 3 sentences.
         Assign provided url as url."""
         print("Adding static")
@@ -100,7 +106,7 @@ def get_parsed_content(url: str, html: str) -> BaseSchema:
 
     # agent.do_conversation(
     #   f""" You are a smart processor of web-scraped text. Follow these instructions:
-    #   1. Go through the text and extract information from the article
+    #   1. Go through the text and extract information from the article, translate to English if not in English.
     #  2. Use the functions with fitting description to transfer the extracted information to pre-defined Schema
     #  3. Reply "TERMINATE" at the end of the message when everything is done.
     #  Here is the text to process ```{html}```""")
@@ -110,7 +116,7 @@ def get_parsed_content(url: str, html: str) -> BaseSchema:
 
 
 if __name__ == "__main__":
-    res = get_parsed_content("""
+    res = get_parsed_content('https://www.gotobrno.cz/en/events/jazzfestbrno/', """
 URL: https://www.gotobrno.cz/en/events/jazzfestbrno/
 Main header: JazzFestBrno
 JazzFestBrno
@@ -119,4 +125,4 @@ The international festival JazzFestBrno will once again transform Brno into a ci
 Brno
 Tell your friends about this event!
 """)
-    print(res)
+    print(json.dumps(res.__dict__))

@@ -16,10 +16,16 @@ class RecordTypes(Base):
     update_interval = Column(String(255), nullable=False)
 
 
+class ParsedSources(Base):
+    __tablename__ = 'parsed_sources'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    url = Column(String(255), nullable=False)
+    content = Column(String(5000), nullable=False)
+
+
 class Sources(Base):
     __tablename__ = 'sources'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    url = Column(String(255), unique=True, nullable=False)
+    url = Column(String(255), primary_key=True, unique=True, nullable=False)
     date_added = Column(Date, nullable=False)
     date_scraped = Column(Date, nullable=True)
     banned = Column(Boolean, nullable=False, default=False)
@@ -36,23 +42,23 @@ class SourcesDB:
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def add_source(self, url, date_added, crawl_only, parent, type_id):
+    def add_source(self, url: str, date_added: str, crawl_only: bool, parent: str, type_id: int):
         source = Sources(url=url, date_added=date_added, crawl_only=crawl_only, parent=parent, type_id=type_id)
         self.session.add(source)
         self.session.commit()
 
-    def add_sources(self, sources):
+    def add_sources(self, sources: list[tuple]):
         source_objects = [Sources(url=s[0], date_added=s[1], crawl_only=s[2], parent=s[3], type_id=s[4]) for s in
                           sources]
         self.session.add_all(source_objects)
         self.session.commit()
 
-    def add_type(self, record_type, update_interval):
+    def add_type(self, record_type: str, update_interval: str):
         record_type = RecordTypes(record_type=record_type, update_interval=update_interval)
         self.session.add(record_type)
         self.session.commit()
 
-    def add_types(self, record_types):
+    def add_types(self, record_types: list[tuple]):
         type_objects = [RecordTypes(record_type=t[0], update_interval=t[1]) for t in record_types]
         self.session.add_all(type_objects)
         self.session.commit()
@@ -60,26 +66,31 @@ class SourcesDB:
     def get_types(self):
         return self.session.query(RecordTypes).all()
 
-    def get_type_id(self, type_name) -> int:
+    def get_type_id(self, type_name: str) -> int:
         record_type = self.session.query(RecordTypes).filter(RecordTypes.record_type == type_name).first()
         return record_type.id
 
-    def insert_sources_from_csv(self, file_path):
+    def insert_sources_from_csv(self, file_path: str):
         data = pd.read_csv(file_path)
         data[TYPE_ID] = data[TYPE].apply(lambda x: self.get_type_id(x))
         data = data[[URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE_ID]]
         csv_sources = [tuple(row) for row in data.values]
         self.add_sources(csv_sources)
 
-    def insert_types_from_csv(self, file_path):
+    def insert_types_from_csv(self, file_path: str):
         data = pd.read_csv(file_path)
         record_types = [tuple(row) for row in data.values]
         self.add_types(record_types)
 
-    def insert_banned_sources_from_csv(self, file_path):
+    def insert_banned_sources_from_csv(self, file_path: str):
         data = pd.read_csv(file_path)
         for index, row in data.iterrows():
-            self.add_banned_source(row[URL], row[DATE_ADDED])
+            self.add_or_update_banned_source(row[URL], row[DATE_ADDED])
+
+    def insert_parsed_sources_from_csv(self, file_path: str):
+        data = pd.read_csv(file_path)
+        parsed_sources = [tuple(row) for row in data.values]
+        self.add_parsed_sources(parsed_sources)
 
     def get_all_sources(self):
         return self.session.query(Sources).all()
@@ -103,7 +114,7 @@ class SourcesDB:
         parents = self.session.query(Sources.parent).distinct().all()
         return [parent for parent, in parents]
 
-    def get_existing_urls_from_list(self, url_list):
+    def get_existing_urls_from_list(self, url_list: list[str]):
         query = self.session.query(Sources.url).filter(Sources.url.in_(url_list)).distinct().all()
         return [url[0] for url in query]
 
@@ -125,6 +136,19 @@ class SourcesDB:
             self.session.add(source)
         self.session.commit()
 
+    def insert_or_update_sources(self, extend_df: pd.DataFrame):
+        for index, row in extend_df.iterrows():
+            source = Sources(
+                url=row[URL] if len(row[URL]) <= 255 else row[URL][:255],
+                date_added=row[DATE_ADDED],
+                date_scraped=row[DATE_SCRAPED],
+                crawl_only=row[CRAWL_ONLY],
+                parent=row[PARENT],
+                type_id=row[TYPE_ID]
+            )
+            self.session.merge(source)
+        self.session.commit()
+
     def update_sources(self, extend_df: pd.DataFrame):
         for index, row in extend_df.iterrows():
             self.session.query(Sources).filter(Sources.url == row[URL]).update({
@@ -136,14 +160,31 @@ class SourcesDB:
             }, synchronize_session=False)
         self.session.commit()
 
-    def add_banned_source(self, banned_source: str, date_added: str):
+    def add_or_update_banned_source(self, banned_source: str, date_added: str):
         print(f"Adding banned source: {banned_source}")
-        self.session.add(Sources(url=banned_source, date_added=date_added, banned=True))
+        source = Sources(url=banned_source, date_added=date_added, banned=True)
+        self.session.merge(source)
         self.session.commit()
 
     def get_banned_urls(self) -> list:
         banned_urls = self.session.query(Sources.url).filter(Sources.banned.is_(True)).all()
         return [url for url, in banned_urls]
+
+    def get_all_non_crawl_only_not_banned_sources_by_type(self, type_name: str):
+        return pd.read_sql(
+            self.session.query(Sources).filter(Sources.record_type.has(RecordTypes.record_type == type_name)).filter(
+                Sources.banned.is_(False)).filter(Sources.crawl_only.is_(False)).statement,
+            self.session.bind)
+
+    def add_parsed_sources(self, parsed_sources: list[tuple]):
+        source_objects = [ParsedSources(url=s[0], content=s[1]) for s in parsed_sources]
+        self.session.add_all(source_objects)
+        self.session.commit()
+
+    def add_parsed_source(self, url: str, content: str):
+        source = ParsedSources(url=url, content=content)
+        self.session.add(source)
+        self.session.commit()
 
 
 if __name__ == '__main__':
@@ -151,3 +192,4 @@ if __name__ == '__main__':
     sources.insert_types_from_csv('./../data/record_types.csv')
     sources.insert_sources_from_csv('./../data/sources.csv')
     sources.insert_banned_sources_from_csv('./../data/banned_sources.csv')
+    sources.insert_parsed_sources_from_csv('./../data/parsed_sources.csv')

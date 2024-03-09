@@ -1,7 +1,8 @@
 import logging
 import re
+import time
 
-from bs4 import BeautifulSoup, Comment
+from bs4 import BeautifulSoup, Comment, Doctype
 from fake_useragent import UserAgent
 import requests
 import copy
@@ -20,7 +21,8 @@ EXCLUDE_TAGS_BASE = [
 DECOMPOSE_PATTERNS_BASE = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*share.*", ".*footer.*", ".*search.*",
                            ".*intro__scroll.*", ".*vhide.*", ".*icon.*", ".*logo.*", ".*btn.*", ".*img.*", ".*image.*",
                            ".*f-std.*", ".*screen-reader.*", ".*lang.*", ".*login.*", ".*register.*", ".*noprint.*",
-                           ".*hidden.*", ".*accordion.*", ".*actions.*", ".*jump.*", ".*shop.*", ".*cart.*"]
+                           ".*hidden.*", ".*accordion.*", ".*actions.*", ".*jump.*", ".*shop.*", ".*cart.*",
+                           ".*citation.*"]
 
 WIKI_SPECIFIC = [".*ib-settlement-caption.*", ".*wikitable.*", ".*Gallery.*", ".*toccolours.*", ".*References.*",
                  ".*Notes.*", ".*Further reading.*", ".*External links.*", ".*See_also.*", ".*Coordinates.*",
@@ -92,8 +94,17 @@ class WebScraper:
         if not self.base_clean_html:
             soup = BeautifulSoup(self.html, 'html.parser')
             soup = self._base_clean(soup)
-            self.base_clean_html = soup.prettify()
+            html = soup.prettify()
+            self.base_clean_html = self._remove_repeated_parts(html)
         return self.base_clean_html
+
+    @staticmethod
+    def _extract_doctype(soup):
+        for item in soup.contents:
+            if isinstance(item, Doctype):
+                item.extract()
+                break
+        return soup
 
     @staticmethod
     def _exclude_tags(soup):
@@ -151,6 +162,7 @@ class WebScraper:
     def _unwrap_and_decompose(self, html):
         soup = BeautifulSoup(html, 'html.parser')
         soup = self._extract_comments(soup)
+        soup = self._extract_doctype(soup)
         soup = self._exclude_tags(soup)
         soup = self._decompose_patterns(soup)
         soup = self._apply_unwrap_patterns(soup)
@@ -165,6 +177,10 @@ class WebScraper:
                 prev = tag.find_previous_sibling()
                 if prev and self._is_header(prev):
                     prev.decompose()
+                tag.decompose()
+        if len(soup.get_text()) < 100:
+            soup = BeautifulSoup(html, 'html.parser')
+            for tag in soup.find_all(['a']):
                 tag.decompose()
         return soup.prettify()
 
@@ -244,8 +260,7 @@ class WebScraper:
             return self._is_only_child_header(children[0])
         return False
 
-    def _get_text(self, soup):
-        text = soup.get_text(strip=True, separator='\n')
+    def _remove_repeated_parts(self, text):
         if 'gotobrno.cz/en/' in self.url:
             index = text.find('Tell your friends about')
             if index != -1:
@@ -259,6 +274,24 @@ class WebScraper:
             if index != -1:
                 text = text[:index]
         return text
+
+    def _get_text(self, soup):
+        text = soup.get_text(strip=True, separator='\n')
+        text = self._remove_repeated_parts(text)
+        return self._apply_regexes(text)
+
+    @staticmethod
+    def _apply_regexes(text: str):
+        text = text.encode('utf-8', 'ignore').decode('utf-8')
+        text = re.sub(r'\uFEFF|\u00A0', ' ', text)
+        text = re.sub(r' +', ' ', text)
+        text = re.sub(r' +\n', '\n', text)
+        text = re.sub(r'\n +', '\n', text)
+        text = re.sub(r'\n(,|\.|;|:|-)', r'\1', text)
+        text = re.sub(r'\n(\()', ' (', text)
+        text = re.sub(r'(\()\n', r'\1', text)
+        text = re.sub(r'\n(\))', r')', text)
+        return re.sub(r'([)|,])\n', r'\1 ', text)
 
     def get_clean_texts(self, max_size=MAX_SIZE) -> list[str]:
         soup = BeautifulSoup(self.get_cleaned_html(), 'html.parser')
@@ -333,7 +366,7 @@ class WebScraper:
         html = self.get_decomposed_box_of_links_html()
         soup = BeautifulSoup(html, 'html.parser')
         for tag in soup.find_all():
-            if len(tag.text) > 100:
+            if len(tag.get_text(strip=True)) > 100:
                 return False
         if len(self.get_clean_texts()) > 500:
             return False
@@ -356,18 +389,28 @@ class WebScraper:
         sliced_chunks = []
         current_chunk = ''
         current_length = 0
-        print('SIZE SLICING')
         soup = BeautifulSoup(html, 'html.parser')
 
         for tag in soup.find_all():
-            if len(tag.get_text(strip=True)) > max_size:
+            if len(tag.get_text()) > max_size:
                 tag.unwrap()
 
         for tag in soup.find_all(recursive=False):
             if current_length + len(tag.get_text().strip()) > max_size:
-                sliced_chunks.append(current_chunk)
-                current_chunk = ''
-                current_length = 0
+                if current_chunk:
+                    sliced_chunks.append(current_chunk)
+                    current_chunk = ''
+                    current_length = 0
+            if len(tag.get_text().strip()) > max_size:
+                tag_text = tag.get_text().strip()
+                while len(tag_text) > max_size:
+                    index = tag_text.rfind('\n', 0, max_size) or tag_text.rfind('.', 0, max_size)
+                    if index == -1:
+                        break
+                    current_chunk = tag_text[:index + 1]
+                    sliced_chunks.append(current_chunk)
+                    current_chunk = tag_text[index + 1:]
+                    current_length = len(current_chunk)
             current_chunk += str(tag).strip()
             current_length += len(tag.get_text(strip=True))
         if current_chunk:
@@ -377,36 +420,37 @@ class WebScraper:
 
     @staticmethod
     def _slice_by_name(html, name):
-        soup = BeautifulSoup(html, 'html.parser')
         slices = []
-        pretty_soup = str(soup.prettify())
-        for tag in soup.find_all(name):
-            if pretty_soup.find(str(tag)) == 0:
-                break
-            slices.append(pretty_soup[:pretty_soup.find(str(tag))])
-            pretty_soup = pretty_soup[pretty_soup.find(str(tag)):]
-        slices.append(pretty_soup)
-        print('Slices:', slices)
+        found_indexes = [match.start() for match in re.finditer('<' + name, str(html))]
+        if found_indexes and found_indexes[0] > 0:
+            found_indexes.insert(0, 0)
+            for i in range(0, len(found_indexes) - 1):
+                slices.append(html[found_indexes[i]:found_indexes[i + 1]])
+            slices.append(html[found_indexes[-1]:])
         return slices if slices else [html]
 
+    @staticmethod
+    def _apply_slicing_in_loop(slicing_method, slices: list, name: str, max_size: int):
+        new_slices = []
+        to_remove = []
+        for s in slices:
+            soup = BeautifulSoup(s, 'html.parser')
+            if len(soup.get_text()) > max_size:
+                to_remove.append(s)
+                if name:
+                    new_slices.extend(slicing_method(s, name))
+                else:
+                    new_slices.extend(slicing_method(s, max_size))
+        slices = [s for s in slices if s not in to_remove]
+        slices.extend(new_slices)
+        return slices
+
     def _get_cleaned_html_text_sliced_by_headers(self, max_size):
+        max_size = max_size - len(self.get_main_header()) - 1 if self.get_main_header() else max_size
         html = self.get_cleaned_html()
         slices = self._slice_by_name(html, 'h2')
-        for s in slices:
-            soup = BeautifulSoup(s, 'html.parser')
-            if len(soup.get_text()) > max_size:
-                slices.remove(s)
-                slices.extend(self._slice_by_name(s, 'h3'))
-        for s in slices:
-            soup = BeautifulSoup(s, 'html.parser')
-            if len(soup.get_text()) > max_size:
-                print('------------------------------------------')
-                print(len(soup.get_text()))
-                print(s)
-
-                break
-                slices.remove(s)
-                slices.extend(self._slice_html_by_size(s, max_size))
+        slices = self._apply_slicing_in_loop(self._slice_by_name, slices, 'h3', max_size)
+        slices = self._apply_slicing_in_loop(self._slice_html_by_size, slices, '', max_size)
         current_chunk = ''
         result = []
         for s in slices:
@@ -414,15 +458,22 @@ class WebScraper:
             if len(current_chunk) + len(text) > max_size:
                 result.append(current_chunk)
                 current_chunk = ''
-            current_chunk += text
+            current_chunk += '\n' + text
         if current_chunk:
             result.append(current_chunk)
-        return result
+
+        header = self.get_main_header() + '\n' if self.get_main_header() else ''
+
+        return [header + r for r in result if len(r) > 200]
 
 
 if __name__ == '__main__':
     ws = WebScraper(
-        'https://cosedeje.brno.cz/w/odpoledni-taborak-motosalon-ci-roboti-ve-vida-objevte-co-prinasi-vikend')
+        # 'https://www.gotobrno.cz/en/brno-phenomenon/being-a-guide-in-the-tutankhamun-villa-rapeseed-liquor-cinderella-and-the-patience-of-a-saint/')
+        # 'https://cosedeje.brno.cz/w/odpoledni-taborak-motosalon-ci-roboti-ve-vida-objevte-co-prinasi-vikend')
+        # 'https://en.wikipedia.org/wiki/List_of_people_from_Brno')
+        'https://www.brno.cz/mestske-casti-prehled')
+    # 'https://en.brno.cz/')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())

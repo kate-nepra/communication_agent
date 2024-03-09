@@ -1,8 +1,10 @@
+import json
+
 import arrow
 import pandas as pd
 
 from src.crawl_only_type_classifier import get_content_type
-from src.parser import get_parsed_content
+from src.parser import get_parsed_content, BaseSchema
 from src.sourcesdb import SourcesDB
 from src.web_crawler import WebCrawler
 from src.web_scraper import WebScraper
@@ -39,44 +41,56 @@ class DataAcquisitionManager:
         extend_df = extend_df[extend_df[URL].apply(lambda x: len(x) <= 255)]
         if existing_urls:
             self._update_existing_urls(existing_urls)
-        return extend_df[~extend_df[URL].isin(existing_urls)]
+        extend_df = extend_df[~extend_df[URL].isin(existing_urls)]
+        extend_df = self._remove_banned(self._sources_db.get_banned_urls(), extend_df)
+        extend_df[DATE_SCRAPED] = None
+        extend_df[TYPE_ID] = None
+        return extend_df
 
-    def acquire_data(self, urls_df) -> None:
+    def acquire_data(self, urls_df, iterations: int) -> None:
         """
-        This method is the main entry point for the data acquisition process. It retrieves urls from the sources database
-        and passes them to the web crawler and the web scraper.
+        This method is responsible for the data acquisition process. It processes the given urls and passes them to the
+        web crawler and the web scraper.
         """
 
-        acquired_df = self._process_urls(urls_df[URL])
-        print('acquired_df -------------------------------------------------------------------------')
-        print(acquired_df)
-        self._process_urls(acquired_df[URL])
+        for i in range(iterations):
+            urls_df = self._process_urls(urls_df[URL])
+            print('ITERATION: ' + str(i))
+            print('acquired_df -------------------------------------------------------------------------')
+            print(urls_df)
 
     def _process_urls(self, urls: list) -> pd.DataFrame:
-        with open('output.txt', 'a') as file:
-            acquired = pd.DataFrame()
-            for url in urls:
-                new_df = self._get_new_urls_from_url(url, file)
-                new_df.to_csv('new_df.csv', index=False)
-                self._sources_db.insert_sources(new_df)  # TODO may be update not insert
-                acquired = pd.concat([acquired, new_df])
-            acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
-            return acquired
-
-    def _update_urls(self, urls: list) -> pd.DataFrame:
+        """
+        This method processes the given urls and passes them to the web crawler and the web scraper.
+        :param urls: List of urls to be processed
+        :return: DataFrame with the new urls
+        """
         acquired = pd.DataFrame()
         for url in urls:
             new_df = self._get_new_urls_from_url(url)
-            new_df.to_csv('new_df.csv', index=False)
+            self._sources_db.insert_or_update_sources(new_df)
+            acquired = pd.concat([acquired, new_df])
+        acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
+        return acquired
+
+    def _update_urls(self, urls: list) -> pd.DataFrame:
+        """
+        This method updates the given urls in the sources database.
+        :param urls: List of urls to be updated
+        :return: DataFrame with the new urls
+        """
+        acquired = pd.DataFrame()
+        for url in urls:
+            new_df = self._get_new_urls_from_url(url)
             self._sources_db.update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
         acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
         return acquired
 
-    def initial_data_acquisition(self) -> None:
+    def initial_data_acquisition(self, iterations: int) -> None:
         """
-        This method is responsible for the initial data acquisition. It retrieves the initial set of urls from the
-        sources database and passes them to the web crawler and the web scraper.
+        This method is responsible for the initial data acquisition. It scrapes the contents of the initial non
+        crawl_only data and passes the crawl_only data to the web crawler and the web scraper.
         """
 
         urls_df = self._sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
@@ -87,11 +101,14 @@ class DataAcquisitionManager:
         to_scrape = pd.concat(
             [urls_df[urls_df[CRAWL_ONLY] == 0], self._sources_db.get_all_static_sources_as_dataframe()])
         self._scrape_and_update_sources(to_scrape)
-        self.acquire_data(urls_df)
+        self.acquire_data(urls_df, iterations)
 
     def _is_banned(self, ws: WebScraper, new_url: str, banned: list) -> bool:
+        """
+        This method checks if the given url is banned based on the content of the web page.
+        """
         if not ws.does_html_contain_substrs(BRNO_SUBSTRS):
-            self._sources_db.add_banned_source(new_url, arrow.now().format(DATE_FORMAT))
+            self._sources_db.add_or_update_banned_source(new_url, arrow.now().format(DATE_FORMAT))
             banned.append(new_url)
             return True
         return False
@@ -102,7 +119,20 @@ class DataAcquisitionManager:
         """
         self._sources_db.update_existing_urls_date(existing_urls, arrow.now().format(DATE_FORMAT))
 
+    def update_by_type_name(self, type_name: str) -> None:
+        if type_name == 'pdf':
+            return  # TODO handle pdf
+        data_df = self._sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
+        print('data_df -------------------------------------------------------------------------')
+        print(data_df)
+        self._scrape_and_update_sources(data_df)
+
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
+        """
+        This method scrapes the contents of the given urls and updates the sources database with the scraped data.
+        :param to_scrape: DataFrame with the urls to be scraped
+        :return:
+        """
         for url in to_scrape[URL]:
             print('URL: ' + url)
             ws = WebScraper(url)
@@ -110,54 +140,77 @@ class DataAcquisitionManager:
                 continue
             for t in ws.get_clean_texts():
                 content = get_parsed_content(url, t)
+                self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
                 type_name = content.record_type
                 to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self._sources_db.get_type_id(type_name)
                 to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
-        self._sources_db.update_sources(to_scrape)
+        self._sources_db.insert_or_update_sources(to_scrape)
 
     @staticmethod
     def _remove_banned(banned: list, extend_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        This method removes the banned urls from the given DataFrame.
+        :param banned: List of banned urls
+        :param extend_df:
+        :return:
+        """
+
         extend_df = extend_df[~extend_df[URL].isin(banned)]
         for ban in banned:
             extend_df = extend_df[~extend_df[URL].str.contains(ban, regex=False)]
         return extend_df
 
     def _handle_pdf(self, url: str, parent_url: str) -> None:
+        """ This method handles the pdf urls. It adds the pdf url to the sources database. Only pdfs from
+        gotobrno are allowed."""
         if 'gotobrno' in parent_url:
             self._sources_db.add_source(url, arrow.now().format(DATE_FORMAT), None, None,
                                         int(self._sources_db.get_type_id('pdf')))
 
-    def _process_non_crawl_only(self, new_url: str, ws: WebScraper, file) -> list[[bool, int, str]]:
+    def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
+        """
+        This method processes the non crawl_only urls. It scrapes the contents of the web page and passes the scraped
+        data to the parser.
+        :param new_url: Url that is being processed
+        :param ws: WebScraper object
+        :return: List of lists with the processed data, where each list contains the following elements:
+            - crawl_only: boolean
+            - type_id: int
+            - date_scraped: str
+        """
         results = []
         for t in ws.get_clean_texts():
             content = get_parsed_content(new_url, t)
             type_id = self._sources_db.get_type_id(content.record_type)
+            self._sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content))
             results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
         return results
 
-    def _get_new_urls_from_url(self, url: str, file) -> pd.DataFrame:
+    def _get_new_urls_from_url(self, url: str) -> pd.DataFrame:
+        """
+        This method is responsible for calling the web crawler and getting the new urls, removing the banned urls and
+        processing the new urls.
+        :param url: Url to be crawled
+        :return: DataFrame with the new urls
+        """
         new_urls = self._crawl_url(url, self._sources_db.get_all_parents())
         if new_urls.empty:
             return new_urls
-        new_urls = self._remove_banned(self._sources_db.get_banned_urls(), new_urls)
-        new_urls[DATE_SCRAPED] = None
-        new_urls[TYPE_ID] = None
 
         print('URL: ' + url)
         print('EXTEND DF:')
         print(new_urls)
-        new_urls = self._process_new_urls(new_urls, url, file)
-        # TODO insert into vecDB - do it directly in the parser??
+        new_urls = self._process_new_urls(new_urls, url)
         return new_urls
 
-    def _process_new_urls(self, new_urls: pd.DataFrame, parent_url: str, file) -> pd.DataFrame:
+    def _process_new_urls(self, new_urls: pd.DataFrame, parent_url: str) -> pd.DataFrame:
+        """ This method processes the new urls and passes them to the web scraper. """
         banned = []
         for new_url in new_urls[URL]:
             if (new_url[-4:] == '.pdf') or (new_url[-4:] == '.PDF'):
                 self._handle_pdf(new_url, parent_url)
                 banned.append(new_url)
                 continue
-                # TODO get insides of pdf to vecDB
             print(new_url)
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
@@ -165,7 +218,7 @@ class DataAcquisitionManager:
                     type_id = int(self._sources_db.get_type_id(get_content_type(ws.html)))
                     new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
                 else:
-                    processed = self._process_non_crawl_only(new_url, ws, file)
+                    processed = self._process_non_crawl_only(new_url, ws)
                     for crawl_only, type_id, date_scraped in processed:
                         new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, DATE_SCRAPED, TYPE_ID]] = [crawl_only,
                                                                                                        date_scraped,
@@ -173,8 +226,18 @@ class DataAcquisitionManager:
         new_urls = self._remove_banned(banned, new_urls)
         return new_urls
 
+    @staticmethod
+    def _get_json_str_from_content(content: BaseSchema) -> str:
+        """
+        This method returns the content as a dictionary.
+        :param content: Content to be converted
+        :return: Content as a dictionary
+        """
+        return json.dumps(content.__dict__)
+
 
 if __name__ == '__main__':
     sources = SourcesDB()
     dam = DataAcquisitionManager(sources)
-    dam.initial_data_acquisition()
+    dam.initial_data_acquisition(3)
+    # dam.update_by_type_name('event')
