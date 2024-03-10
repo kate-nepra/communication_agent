@@ -22,3 +22,5 @@ BRNO_SUBSTRS = ['Brno', 'brno', 'BRNO', 'Brně', 'Brnu', 'Brnem']
 FORCED_TAGS = ['body', 'main', 'html']
 
 MAX_SIZE = 2500
+
+PDF_FOLDER = "./../pdfs"

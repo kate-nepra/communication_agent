@@ -1,20 +1,13 @@
-import datetime
 import json
+import os
 from dataclasses import dataclass
 import openai
 from agent.agent import Agent
 import arrow
-
+from dotenv import load_dotenv
 from src.constants import DATE_FORMAT
 
-schema = {
-    "header": "string",
-    "record_type": "string",
-    "brief": "string",
-    "text": "string",
-    "url": "string",
-    "dateFetched": "datetime"
-}
+load_dotenv()
 
 
 @dataclass
@@ -97,7 +90,7 @@ def get_parsed_content(url: str, content: str) -> BaseSchema:
         results.append(BaseSchema(header, "static", brief, text, url, arrow.now().format(DATE_FORMAT)))
         return "The static entity was added successfully, you can continue with the further processing."
 
-    agent = Agent(api_key="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", model="gpt-3.5-turbo-1106")
+    agent = Agent(api_key=os.getenv('OPEN_AI_API_KEY'), model="gpt-3.5-turbo-1106")
 
     agent.add_function(add_place)
     agent.add_function(add_event)
@@ -113,16 +106,3 @@ def get_parsed_content(url: str, content: str) -> BaseSchema:
 
     # return results[0]
     return BaseSchema("header", "event", "brief", "text", "url", arrow.now().format(DATE_FORMAT))
-
-
-if __name__ == "__main__":
-    res = get_parsed_content('https://www.gotobrno.cz/en/events/jazzfestbrno/', """
-URL: https://www.gotobrno.cz/en/events/jazzfestbrno/
-Main header: JazzFestBrno
-JazzFestBrno
-The international festival JazzFestBrno will once again transform Brno into a city of jazz. Music lovers can savour the prospect of hearing the biggest stars in world jazz, progressive musicians from the rising generation, and a selection of some of the republic’s own most exciting.
-21 january–10 may 2024
-Brno
-Tell your friends about this event!
-""")
-    print(json.dumps(res.__dict__))

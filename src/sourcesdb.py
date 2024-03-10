@@ -186,10 +186,14 @@ class SourcesDB:
         self.session.add(source)
         self.session.commit()
 
+    def get_all_pdf_urls(self):
+        pdf_urls = self.session.query(Sources.url).filter(
+            Sources.record_type.has(RecordTypes.record_type == 'pdf')).all()
+        return [url for url, in pdf_urls]
 
-if __name__ == '__main__':
-    sources = SourcesDB()
-    sources.insert_types_from_csv('./../data/record_types.csv')
-    sources.insert_sources_from_csv('./../data/sources.csv')
-    sources.insert_banned_sources_from_csv('./../data/banned_sources.csv')
-    sources.insert_parsed_sources_from_csv('./../data/parsed_sources.csv')
+
+sources = SourcesDB()
+sources.insert_types_from_csv('./../data/record_types.csv')
+sources.insert_sources_from_csv('./../data/sources.csv')
+sources.insert_banned_sources_from_csv('./../data/banned_sources.csv')
+sources.insert_parsed_sources_from_csv('./../data/parsed_sources.csv')

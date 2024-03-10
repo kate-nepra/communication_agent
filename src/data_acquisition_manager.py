@@ -8,6 +8,7 @@ from src.parser import get_parsed_content, BaseSchema
 from src.sourcesdb import SourcesDB
 from src.web_crawler import WebCrawler
 from src.web_scraper import WebScraper
+from src.pdf_scraper import PdfScraper
 from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, TYPE_ID, CRAWL_ONLY, DATE_SCRAPED
 
 
@@ -121,7 +122,13 @@ class DataAcquisitionManager:
 
     def update_by_type_name(self, type_name: str) -> None:
         if type_name == 'pdf':
-            return  # TODO handle pdf
+            urls = self._sources_db.get_all_pdf_urls()
+            docs = PdfScraper(urls).get_chunks_batch()
+            for chunks, url in docs:
+                for chunk in chunks:
+                    content = get_parsed_content(url, chunk)
+                    self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+            self._sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
         data_df = self._sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
         print('data_df -------------------------------------------------------------------------')
         print(data_df)
@@ -166,6 +173,11 @@ class DataAcquisitionManager:
         if 'gotobrno' in parent_url:
             self._sources_db.add_source(url, arrow.now().format(DATE_FORMAT), None, None,
                                         int(self._sources_db.get_type_id('pdf')))
+            pdf_scraper = PdfScraper([url])
+            chunks, url = pdf_scraper.get_chunks()
+            for chunk in chunks:
+                content = get_parsed_content(url, chunk)
+                self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
 
     def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
         """
