@@ -56,9 +56,6 @@ class DataAcquisitionManager:
 
         for i in range(iterations):
             urls_df = self._process_urls(urls_df[URL])
-            print('ITERATION: ' + str(i))
-            print('acquired_df -------------------------------------------------------------------------')
-            print(urls_df)
 
     def _process_urls(self, urls: list) -> pd.DataFrame:
         """
@@ -95,8 +92,6 @@ class DataAcquisitionManager:
         """
 
         urls_df = self._sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
-        print('urls_df -------------------------------------------------------------------------')
-        print(urls_df)
         if urls_df.empty:
             return
         to_scrape = pd.concat(
@@ -122,17 +117,19 @@ class DataAcquisitionManager:
 
     def update_by_type_name(self, type_name: str) -> None:
         if type_name == 'pdf':
-            urls = self._sources_db.get_all_pdf_urls()
-            docs = PdfScraper(urls).get_chunks_batch()
-            for chunks, url in docs:
-                for chunk in chunks:
-                    content = get_parsed_content(url, chunk)
-                    self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
-            self._sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
+            self._update_pdfs()
+            return
         data_df = self._sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
-        print('data_df -------------------------------------------------------------------------')
-        print(data_df)
         self._scrape_and_update_sources(data_df)
+
+    def _update_pdfs(self) -> None:
+        urls = self._sources_db.get_all_pdf_urls()
+        docs = PdfScraper(urls).get_chunks_batch()
+        for chunks, url in docs:
+            for chunk in chunks:
+                content = get_parsed_content(url, chunk)
+                self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+        self._sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
 
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
         """
@@ -141,7 +138,6 @@ class DataAcquisitionManager:
         :return:
         """
         for url in to_scrape[URL]:
-            print('URL: ' + url)
             ws = WebScraper(url)
             if self._is_banned(ws, url, []):
                 continue
@@ -170,9 +166,9 @@ class DataAcquisitionManager:
     def _handle_pdf(self, url: str, parent_url: str) -> None:
         """ This method handles the pdf urls. It adds the pdf url to the sources database. Only pdfs from
         gotobrno are allowed."""
-        if 'gotobrno' in parent_url:
-            self._sources_db.add_source(url, arrow.now().format(DATE_FORMAT), None, None,
-                                        int(self._sources_db.get_type_id('pdf')))
+        if 'gotobrno' in url:
+            self._sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
+                                                  None, parent_url, int(self._sources_db.get_type_id('pdf')))
             pdf_scraper = PdfScraper([url])
             chunks, url = pdf_scraper.get_chunks()
             for chunk in chunks:
@@ -209,9 +205,6 @@ class DataAcquisitionManager:
         if new_urls.empty:
             return new_urls
 
-        print('URL: ' + url)
-        print('EXTEND DF:')
-        print(new_urls)
         new_urls = self._process_new_urls(new_urls, url)
         return new_urls
 
@@ -223,7 +216,6 @@ class DataAcquisitionManager:
                 self._handle_pdf(new_url, parent_url)
                 banned.append(new_url)
                 continue
-            print(new_url)
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():

@@ -15,6 +15,7 @@ class WebCrawler:
         self.parents = parents
 
     def get_extend_df(self) -> pd.DataFrame:
+        """Returns a DataFrame with the crawled urls from the given website."""
         html = self.ws.get_base_clean_html()
         main_url = self._get_parent_part_url(self.url)
         urls = []
@@ -27,7 +28,8 @@ class WebCrawler:
             urls = self._del_subset(ban, urls)
         return self._get_cleaned_df(urls).drop_duplicates()
 
-    def _get_cleaned_df(self, urls):
+    def _get_cleaned_df(self, urls) -> pd.DataFrame:
+        """Returns a DataFrame with the cleaned urls."""
         urls = self._clean_url_list(urls)
         dicts = self._create_urls_dict(urls)
         df = pd.DataFrame(dicts)
@@ -35,7 +37,9 @@ class WebCrawler:
         df[CRAWL_ONLY] = df[CRAWL_ONLY].astype(bool)
         return df.drop_duplicates(subset=URL)
 
-    def _get_main_urls(self, html):
+    @staticmethod
+    def _get_main_urls(html) -> list[str]:
+        """Returns a list of urls from the main part of the website."""
         if not html:
             return []
         soup = BeautifulSoup(html, 'html.parser')
@@ -45,12 +49,13 @@ class WebCrawler:
             return urls
         return []
 
-    def _create_urls_dict(self, urls):
-        return [{URL: url, DATE_ADDED: arrow.now().format(DATE_FORMAT), PARENT: self._get_parent_part_url(url)} for url
-                in
-                urls]
+    def _create_urls_dict(self, urls) -> list[dict]:
+        """Returns a list of dictionaries with the urls and the date they were added."""
+        date = arrow.now().format(DATE_FORMAT)
+        return [{URL: url, DATE_ADDED: date, PARENT: self._get_parent_part_url(url)} for url in urls]
 
-    def _clean_url_list(self, urls: list[str]):
+    def _clean_url_list(self, urls: list[str]) -> list[str]:
+        """Returns a list of cleaned urls."""
         invalid_characters = ["{", "}", "|", "\\", "^", "~", "[", "]", "`", "<", ">", " "]
         for char in invalid_characters:
             urls = self._del_subset(char, urls)
@@ -59,11 +64,12 @@ class WebCrawler:
             urls = self._del_subset(suffix, urls)
         return [url for url in urls if url.startswith('http') or url.startswith('www')]
 
-    def _is_url_in_parents(self, url):
+    def _is_url_in_parents(self, url) -> bool:
         return url in self.parents
 
     @staticmethod
-    def _get_nav_urls(html):
+    def _get_nav_urls(html) -> list[str]:
+        """Returns a list of urls from the navigation part of the website."""
         if not html:
             return []
         soup = BeautifulSoup(html, 'html.parser')
@@ -74,18 +80,13 @@ class WebCrawler:
         return []
 
     @staticmethod
-    def _get_parent_part_url(url):
+    def _get_parent_part_url(url) -> str:
+        """Returns the parent part of the url."""
         parsed_url = urlparse(url)
         parent_url = urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', ''))
         return parent_url
 
     @staticmethod
-    def _del_subset(substr, urls):
+    def _del_subset(substr, urls) -> list[str]:
+        """Deletes the urls containing the given substring."""
         return [url for url in urls if substr not in url]
-
-
-if __name__ == '__main__':
-    data = pd.read_csv('./../data/sources.csv')
-    ws = WebScraper('https://www.gotobrno.cz/en/explore-brno/')
-    wc = WebCrawler('https://www.gotobrno.cz/en/explore-brno/', [])
-    print(wc.get_extend_df())

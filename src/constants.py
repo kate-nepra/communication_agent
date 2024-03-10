@@ -1,6 +1,6 @@
 BANNED_SUBSTRS = ['facebook', 'jobs', 'goout', 'mailto', 'twitter', 'instagram', 'linkedin', 'google', 'shop',
                   '/partners', 'cat=', 'view=', 'search=', 'youtu', 'obchod', 'flickr', 'brno-phenomenon', 'apple',
-                  'phaenomen-bruenn', 'fenomen-brno', 'weblist-mzm', 'netscout', '/careers', '/kariera', 'gle',
+                  'phaenomen-bruenn', 'fenomen-brno', 'weblist-mzm', 'netscout', '/careers', '/kariera', 'gle', '/de/',
                   'newsletter', 'blog/page', 'kamera']
 
 ROOT = 'root'
@@ -24,3 +24,7 @@ FORCED_TAGS = ['body', 'main', 'html']
 MAX_SIZE = 2500
 
 PDF_FOLDER = "./../pdfs"
+RECORD_TYPES_CSV = './../data/record_types.csv'
+SOURCES_CSV = './../data/sources.csv'
+BANNED_SOURCES_CSV = './../data/banned_sources.csv'
+PARSED_SOURCES_CSV = './../data/parsed_sources.csv'

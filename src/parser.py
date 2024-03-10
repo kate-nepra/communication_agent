@@ -1,7 +1,5 @@
-import json
 import os
 from dataclasses import dataclass
-import openai
 from agent.agent import Agent
 import arrow
 from dotenv import load_dotenv
@@ -38,11 +36,6 @@ class Duration:
 
 def get_parsed_content(url: str, content: str) -> BaseSchema:
     results: list[BaseSchema] = []
-
-    # append text to file output.txt
-    with open("output.txt", 'a') as file:
-        file.write(f'\n{url} ----------------------------------------------------------------\n')
-        file.write(content)
 
     def add_place(header: str, text: str, brief: str, address: str, url: str) -> str:
         """ Call this function if you encounter entity that is a place or destination in or near Brno city, such as restaurant, café, bar, bakery, museum, tour, greenery, church, castle, university, kino, theatre or similar.
@@ -97,12 +90,12 @@ def get_parsed_content(url: str, content: str) -> BaseSchema:
     agent.add_function(add_administration)
     agent.add_function(add_static)
 
-    # agent.do_conversation(
-    #   f""" You are a smart processor of web-scraped text. Follow these instructions:
-    #   1. Go through the text and extract information from the article, translate to English if not in English.
-    #  2. Use the functions with fitting description to transfer the extracted information to pre-defined Schema
-    #  3. Reply "TERMINATE" at the end of the message when everything is done.
-    #  Here is the text to process ```{html}```""")
+    agent.do_conversation(
+        f""" You are a smart processor of web-scraped text. Follow these instructions:
+      1. Go through the text and extract information from the article, translate to English if not in English.
+      2. Use the functions with fitting description to transfer the extracted information to pre-defined Schema
+      3. Reply "TERMINATE" at the end of the message when everything is done.
+    URL is {url}. 
+    Here is the text to process ```{content}```""")
 
-    # return results[0]
-    return BaseSchema("header", "event", "brief", "text", "url", arrow.now().format(DATE_FORMAT))
+    return results[0]
