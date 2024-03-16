@@ -1,9 +1,13 @@
 import logging
+
+import mysql
 import pandas as pd
+from mysqlx import Error
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
-from constants import URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, TYPE_ID, DATE_SCRAPED
+from constants import URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE, TYPE_ID, DATE_SCRAPED, RECORD_TYPES_CSV, SOURCES_CSV, \
+    BANNED_SOURCES_CSV, PARSED_SOURCES_CSV, CONTENT_TYPES_CSV
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
@@ -14,6 +18,14 @@ class RecordTypes(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     record_type = Column(String(255), unique=True, nullable=False)
     update_interval = Column(String(255), nullable=False)
+    content_type_id = Column(Integer, ForeignKey('content_types.id'), nullable=False)
+    content_type = relationship("ContentTypes")
+
+
+class ContentTypes(Base):
+    __tablename__ = 'content_types'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    content_type = Column(String(255), unique=True, nullable=False)
 
 
 class ParsedSources(Base):
@@ -21,6 +33,23 @@ class ParsedSources(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String(255), nullable=False)
     content = Column(String(5000), nullable=False)
+    content_type_id = Column(Integer, ForeignKey('content_types.id'), nullable=False)
+    content_type = relationship("ContentTypes")
+
+
+def create_database(host="localhost", user="root", password="password", database="agent_sources"):
+    connection = mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password
+    )
+    cursor = connection.cursor()
+    query = f"CREATE DATABASE IF NOT EXISTS {database}"
+    try:
+        cursor.execute(query)
+        logger.info("Database created successfully")
+    except Error as err:
+        logger.error(f"Error: '{err}'")
 
 
 class Sources(Base):
@@ -70,20 +99,22 @@ class SourcesDB:
         self.session.add_all(source_objects)
         self.session.commit()
 
-    def add_type(self, record_type: str, update_interval: str):
+    def add_type(self, record_type: str, update_interval: str, content_type_id: int):
         """
         Adds a record type to the database.
         :param record_type: Type name.
         :param update_interval: The interval of the type.
+        :param content_type_id: The id of the content type.
         :return:
         """
-        record_type = RecordTypes(record_type=record_type, update_interval=update_interval)
+        record_type = RecordTypes(record_type=record_type, update_interval=update_interval,
+                                  content_type_id=content_type_id)
         self.session.add(record_type)
         self.session.commit()
 
     def add_types(self, record_types: list[tuple]) -> None:
         """Adds record types to the database."""
-        type_objects = [RecordTypes(record_type=t[0], update_interval=t[1]) for t in record_types]
+        type_objects = [RecordTypes(record_type=t[0], update_interval=t[1], content_type_id=t[2]) for t in record_types]
         self.session.add_all(type_objects)
         self.session.commit()
 
@@ -224,7 +255,7 @@ class SourcesDB:
 
     def add_parsed_sources(self, parsed_sources: list[tuple]) -> None:
         """Adds parsed sources to the database."""
-        source_objects = [ParsedSources(url=s[0], content=s[1]) for s in parsed_sources]
+        source_objects = [ParsedSources(url=s[0], content_type_id=s[1], content=s[2]) for s in parsed_sources]
         self.session.add_all(source_objects)
         self.session.commit()
 
@@ -240,9 +271,35 @@ class SourcesDB:
             Sources.record_type.has(RecordTypes.record_type == 'pdf')).all()
         return [url for url, in pdf_urls]
 
+    def get_all_parsed_sources_contents(self) -> list[str]:
+        """Returns all parsed sources contents."""
+        parsed_sources = self.session.query(ParsedSources.content).all()
+        return [content for content, in parsed_sources]
 
-s_db = SourcesDB()
-s_db.insert_types_from_csv(RECORD_TYPES_CSV)
-s_db.insert_sources_from_csv(SOURCES_CSV)
-s_db.insert_banned_sources_from_csv(BANNED_SOURCES_CSV)
-s_db.insert_parsed_sources_from_csv(PARSED_SOURCES_CSV)
+    def get_all_parsed_sources_contents_by_type(self, type_name: str) -> list[str]:
+        """Returns all parsed sources contents of given type."""
+        parsed_sources = self.session.query(ParsedSources.content).filter(
+            ParsedSources.content_type.has(ContentTypes.content_type == type_name)).all()
+        return [content for content, in parsed_sources]
+
+    def insert_content_types_from_csv(self, file_path: str) -> None:
+        """Inserts content types from given csv file."""
+        data = pd.read_csv(file_path)
+        content_types = [tuple(row) for row in data.values]
+        self.add_content_types(content_types)
+
+    def add_content_types(self, content_types):
+        """Adds content types to the database."""
+        type_objects = [ContentTypes(content_type=t[0]) for t in content_types]
+        self.session.add_all(type_objects)
+        self.session.commit()
+
+
+if __name__ == "__main__":
+    create_database()
+    s_db = SourcesDB()
+    s_db.insert_content_types_from_csv(CONTENT_TYPES_CSV)
+    s_db.insert_types_from_csv(RECORD_TYPES_CSV)
+    s_db.insert_sources_from_csv(SOURCES_CSV)
+    s_db.insert_banned_sources_from_csv(BANNED_SOURCES_CSV)
+    s_db.insert_parsed_sources_from_csv(PARSED_SOURCES_CSV)

@@ -3,12 +3,12 @@ import json
 import arrow
 import pandas as pd
 
-from src.crawl_only_type_classifier import get_content_type
+from src.content_classification import get_content_type_prompt
 from src.parser import get_parsed_content, BaseSchema
 from src.sourcesdb import SourcesDB
 from src.web_crawler import WebCrawler
 from src.web_scraper import WebScraper
-from src.pdf_scraper import PdfScraper
+from src.pdf_processing import PdfProcessor
 from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, TYPE_ID, CRAWL_ONLY, DATE_SCRAPED
 
 
@@ -124,7 +124,7 @@ class DataAcquisitionManager:
 
     def _update_pdfs(self) -> None:
         urls = self._sources_db.get_all_pdf_urls()
-        docs = PdfScraper(urls).get_chunks_batch()
+        docs = PdfProcessor(urls).get_chunks_batch()
         for chunks, url in docs:
             for chunk in chunks:
                 content = get_parsed_content(url, chunk)
@@ -164,13 +164,13 @@ class DataAcquisitionManager:
         return extend_df
 
     def _handle_pdf(self, url: str, parent_url: str) -> None:
-        """ This method handles the pdf urls. It adds the pdf url to the sources database. Only pdfs from
+        """ This method handles the pdf urls. It adds the pdf url to the sources' database. Only pdfs from
         gotobrno are allowed."""
         if 'gotobrno' in url:
             self._sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
                                                   None, parent_url, int(self._sources_db.get_type_id('pdf')))
-            pdf_scraper = PdfScraper([url])
-            chunks, url = pdf_scraper.get_chunks()
+            pdf_parser = PdfProcessor([url])
+            chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
                 content = get_parsed_content(url, chunk)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
@@ -219,7 +219,7 @@ class DataAcquisitionManager:
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():
-                    type_id = int(self._sources_db.get_type_id(get_content_type(ws.html)))
+                    type_id = int(self._sources_db.get_type_id(get_content_type_prompt(ws.html)))
                     new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
                 else:
                     processed = self._process_non_crawl_only(new_url, ws)

@@ -1,8 +1,19 @@
 import openai
 from agent.agent import Agent
 
+from transformers import pipeline
 
-def get_content_type(content: str) -> str:
+from src.constants import RECORD_TYPE_LABELS
+
+
+def get_content_type_simple(text: str, labels: list[str] = RECORD_TYPE_LABELS) -> str:
+    classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+    result = classifier(text, labels)
+    return result['labels'][0]
+
+
+def get_content_type_prompt(content: str) -> str:  # Todo add model choice
     results = []
 
     def assign_place() -> str:

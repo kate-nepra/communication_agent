@@ -8,19 +8,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-class PdfScraper:
+def batch_scrape_pdfs(urls: list[str]):
+    return [scrape_pdf(url, PDF_FOLDER) for url in urls]
+
+
+def scrape_pdf(url, destination_folder) -> str:
+    """Downloads the pdf from the given url and saves it to the destination folder"""
+    destination = destination_folder + '/' + url.split('/')[-1]
+    response = requests.get(url)
+    with open(destination, 'wb') as file:
+        file.write(response.content)
+    return destination
+
+
+class PdfProcessor:
+
     def __init__(self, urls: list[str]):
         self.urls = urls
-        self.destinations = [self._scrape_pdf(url, PDF_FOLDER) for url in urls]
-
-    @staticmethod
-    def _scrape_pdf(url, destination_folder) -> str:
-        """Downloads the pdf from the given url and saves it to the destination folder"""
-        destination = destination_folder + '/' + url.split('/')[-1]
-        response = requests.get(url)
-        with open(destination, 'wb') as file:
-            file.write(response.content)
-        return destination
+        self.destinations = batch_scrape_pdfs(urls)
 
     def get_cleaned_md(self, text) -> str:
         """Removes empty lines, lines with only numbers, and duplicate lines from the markdown file. Also removes lines

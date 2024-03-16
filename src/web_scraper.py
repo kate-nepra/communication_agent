@@ -1,6 +1,5 @@
 import logging
 import re
-import time
 
 from bs4 import BeautifulSoup, Comment, Doctype
 from fake_useragent import UserAgent

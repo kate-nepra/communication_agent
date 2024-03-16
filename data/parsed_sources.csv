@@ -1,5 +1,5 @@
-url,content
-https://en.wikipedia.org/wiki/Brno,"{
+url,content_type_id,content
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Brno Administrative Divisions"",
 ""record_type"": ""static"",
 ""brief"": ""Brno is a city in the South Moravian Region of the Czech Republic, with about 400,000 inhabitants. It is divided into 29 self-governing districts, further sub-divided into 48 administrative parts."",
@@ -7,7 +7,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""The Etymology and Names of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""A summary of the disputed etymology of the name 'Brno', exploring various possible origins from Old Czech, Slavic, Celtic, and other languages. The city's historical names in different languages and notable associations like the asteroid and machine gun named after it."",
@@ -15,7 +15,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Administration of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, a statutory city, comprises 29 administrative divisions with a city assembly as its highest self-governing body. Markéta Vaňková of the Civic Democratic Party serves as the lord mayor as of 2021."",
@@ -23,7 +23,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Demographics of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, the second largest city in the Czech Republic, had 398,510 inhabitants as per the 2021 census. The city boasts a diverse demographic makeup, with Czechs being the largest ethnic group followed by Moravians. In terms of education, Brno hosts several higher education institutions, including Masaryk University, the largest in the city with over 40,000 students, and the Brno University of Technology, one of the largest technical universities in the country."",
@@ -31,7 +31,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Education in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""In 2019, Brno's higher education institutions enrolled 62,000 students, alongside research institutions like CEITEC and ICRC. Masaryk University, with over 40,000 students, stands as Brno's largest university, boasting nine faculties. Additionally, Brno is home to other notable institutions such as Brno University of Technology, Mendel University, and Janáček Academy of Music and Performing Arts."",
@@ -39,7 +39,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Economic Transformation and Innovation in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno's economy has transitioned from engineering to light industry, logistics, and services since 1990. It has become a hub for software development and technology companies, with a growing focus on the quaternary sector, including science, research, and education."",
@@ -47,7 +47,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Sports in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno has a rich history in motor racing, hosting events like the MotoGP championship since 1965 and the Czech Republic motorcycle Grand Prix since 1950. Additionally, it boasts a strong presence in cycling, with historic velodromes and hosting various championships. The city also supports a diverse range of sports teams and has produced notable athletes in tennis, figure skating, and other disciplines."",
@@ -55,7 +55,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Notable People from Brno"",
 ""record_type"": ""static"",
 ""brief"": ""The city of Brno has been home to numerous notable individuals across various fields including science, arts, sports, and literature. Some of these notable figures include Gregor Mendel, Ernst Mach, Adolf Loos, Milan Kundera, and Adam Ondra."",
@@ -63,7 +63,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Twin towns – sister cities of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, a city in the Czech Republic, has established various international relations and cooperation agreements with cities worldwide, including Bratislava, Dallas, Debrecen, Kaunas, Kharkiv, Leeds, Leipzig, Poznań, Rennes, Sankt Pölten, and Stuttgart among others. Additionally, Brno cooperates with cities such as Daejeon, Lviv, Utrecht, and Vienna."",
@@ -71,7 +71,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""History of Brno in the 17th century"",
 ""record_type"": ""static"",
 ""brief"": ""In the 17th century, amidst the Thirty Years' War, Brno's trajectory was shaped by pivotal decisions and historical events. Emperor Ferdinand III relocated the Moravian capital from Olomouc to Brno in 1641 due to Swedish invasions, solidifying Brno's resistance against Swedish forces. Brno's resilience during sieges and establishment as the capital of Moravia underscore its enduring significance in Czech history."",
@@ -79,7 +79,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""History of Brno in the 19th century"",
 ""record_type"": ""static"",
 ""brief"": ""Brno in the 19th century saw significant historical events, including the Battle of Austerlitz and the arrival of the first train from Vienna in 1839, marking the inception of rail transport in the region. The dismantling of city fortifications, the introduction of tram services in 1869, and Gregor Mendel's groundbreaking genetics experiments further shaped Brno's trajectory."",
@@ -88,7 +88,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""History of Brno in the 20th Century"",
 ""record_type"": ""static"",
 ""brief"": ""Brno underwent significant demographic and administrative changes in the 20th century, transitioning from a predominantly German-speaking city to becoming the capital of the Land of Moravia-Silesia and later the administrative center of the South Moravian Region. It faced repression during the German occupation, witnessed deportations of Jews, and underwent industrialization, eventually shifting towards the service sector post-1989."",
@@ -96,7 +96,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Sights of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts numerous historical landmarks, including a UNESCO World Heritage Site and eight national cultural heritage monuments. Notable attractions include Špilberk Castle, Cathedral of St. Peter and Paul, Veveří Castle, Abbey of Saint Thomas, Church of Saint Tomas, Basilica of the Assumption of Our Lady, Church of Saint James, Brno Ossuary, Capuchin crypt, and the Labyrinth under Zelný trh."",
@@ -104,7 +104,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Geography of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, located in the southeastern part of the Czech Republic, is situated at the confluence of the Svitava and Svratka rivers. It boasts a moderate climate and high air quality, with no severe storms or natural disasters recorded."",
@@ -112,7 +112,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Climate of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno experiences an oceanic climate transitioning to a humid continental climate with cold winters and warm to hot summers. Over the past two decades, temperatures have risen, leading to more frequent summer days above 30°C (86°F). Key climate statistics include an average temperature of 9.4°C (49°F), annual precipitation of about 505mm (19.88in), and prevailing northwest winds."",
@@ -120,7 +120,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Cultural Scene of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts a vibrant cultural scene with an annual investment of approximately 30 million euros. The city, home to around 60,000 students, features numerous museums, theaters, festivals, and cultural events."",
@@ -129,7 +129,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Legends of Brno: The Dragon, the Crocodile, and the Wagon Wheel"",
 ""record_type"": ""static"",
 ""brief"": ""Brno is steeped in local legends, including the story of the Brno Dragon, actually a crocodile, defeated by a clever citizen. The city's emblematic crocodile motif extends to local culture, with culinary and sports references. Another tale involves a wager with the devil to roll a wagon wheel to Brno within a day, commemorated alongside the legend of outsmarting Swedish forces besieging the city."",
@@ -137,7 +137,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Museums, libraries and galleries"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts several significant cultural institutions including the Moravian Museum, Moravian Library, Moravian Gallery, and a Technical Museum. The Moravian Museum, founded in 1817, is the largest museum in Moravia with over 6 million pieces in its collection."",
@@ -145,7 +145,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Overview of Brno, Czech Republic"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, situated in the Czech Republic's South Moravian Region, was founded around the year 1000. Covering an area of 230.18 square kilometers, it has a population of 396,101 inhabitants and a metropolitan area population of 696,413 people."",
@@ -153,7 +153,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Brno: City in the South Moravian Region, Czech Republic"",
 ""record_type"": ""static"",
 ""brief"": ""Brno is a city in the South Moravian Region of the Czech Republic, known for its historical significance as the former capital of Moravia and its current role as a political, cultural, and educational hub. It houses important judicial institutions, higher education centers, and hosts various events including exhibitions, trade fairs, motorbike races, and international fireworks competitions."",
@@ -162,7 +162,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Exploring the Charms of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts iconic landmarks such as Špilberk Castle, the Cathedral of Saints Peter and Paul, and Veveří Castle, as well as the UNESCO-listed Villa Tugendhat. Nature lovers can explore the stunning Moravian Karst nearby. Brno is also celebrated for its inclusion in the UNESCO Creative Cities Network and its designation as a 'City of Music' in 2017."",
@@ -170,7 +170,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""History and Importance of Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, historically inhabited since prehistoric times, became a key center of Moravia alongside Olomouc and Znojmo. Initially established as a castle in the 11th century, it grew in influence, becoming the seat of the Moravian Margraves and a significant political and administrative hub."",
@@ -178,7 +178,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Brno: Growth and Influence in the 12th to 15th Centuries"",
 ""record_type"": ""static"",
 ""brief"": ""Brno, granted city privileges in 1243, witnessed significant growth and political influence during the 12th to 15th centuries. It served as a key center for regional assemblies, hosted significant courts, and withstood sieges during the Hussite Wars."",
@@ -186,16 +186,16 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Theatrical Tradition in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts a rich theatrical heritage, with the oldest theatre building in Central Europe, the Reduta Theatre, hosting the first documented professional Czech performance in 1767. The National Theatre of Brno, established in 1884, oversees opera, drama, and ballet, with notable venues like the Mahen Theatre and Janáček Theatre."",
-""text"": ""Brno has a long theatre tradition. Brno has the oldest theatre building in Central Europe, the Reduta Theatre on Zelný trh. The first theatre plays in Brno probably took place in the City Tavern, today's Reduta Theatre; however, the first theatre with boxes was built in this complex in 1733. The first documented professional Czech performance took place in 1767, again in the Reduta Theatre; the play was called Zamilovaný ponocný (English: Watchman in Love) and was performed by the Venice Theatre Company. The same year, Mozart performed in the theatre with his elder sister Anna Maria (Nannerl). In that year the Mozart family spent Christmas in Brno, and their visit is commemorated by a statue of Mozart as a child in front of the Reduta Theatre. The theatre's Mozart Hall was also named after him. The Národní divadlo v Brně (English: National Theatre of Brno; NdB) is the leading producer of opera, drama, and ballet in the city of Brno. The first permanent seat of NdB was established in 1884, and today this institution owns the Mahen Theatre, built in 1882, Janáček Theatre, built in 1965, and the Reduta Theatre. The composer Leoš Janáček is also connected with the National Theatre of Brno. The Mahen Theatre was the first theatre building in Europe to be illuminated by Thomas Edison's electric light bulbs; at that time it was a completely new invention and there were no power plants built in the city, so a small steam power plant was built nearby just to power the theatre, and Edison came to Brno in 1911 to see it. The most commercially successful theatre in Brno is the Brno City Theatre, founded in 1945; its performances are usually sold out. They also stage about 150 performances abroad every year. The theatre's repertoire consists primarily of musical and dramatic shows. There are a variety of smaller theatres in Brno, including the Bolek Polivka Theatre, the Goose on a String Theatre (\""Divadlo Husa na provázku\""), HaDivadlo, Radost Puppet Theatre (\""loutkové divadlo Radost\""), and Polárka Theatre. The Mahen Theatre was originally called the City Theatre, and until 1918 it performed exclusively in German and was not part of the National Theatre of Brno. Between 1971 and 1978, some plays were performed at the Brno Exhibition Centre due to reconstruction of the Mahen Theatre."",""
+""text"": ""Brno has a long theatre tradition. Brno has the oldest theatre building in Central Europe, the Reduta Theatre on Zelný trh. The first theatre plays in Brno probably took place in the City Tavern, today's Reduta Theatre; however, the first theatre with boxes was built in this complex in 1733. The first documented professional Czech performance took place in 1767, again in the Reduta Theatre; the play was called Zamilovaný ponocný (English: Watchman in Love) and was performed by the Venice Theatre Company. The same year, Mozart performed in the theatre with his elder sister Anna Maria (Nannerl). In that year the Mozart family spent Christmas in Brno, and their visit is commemorated by a statue of Mozart as a child in front of the Reduta Theatre. The theatre's Mozart Hall was also named after him. The Národní divadlo v Brně (English: National Theatre of Brno; NdB) is the leading producer of opera, drama, and ballet in the city of Brno. The first permanent seat of NdB was established in 1884, and today this institution owns the Mahen Theatre, built in 1882, Janáček Theatre, built in 1965, and the Reduta Theatre. The composer Leoš Janáček is also connected with the National Theatre of Brno. The Mahen Theatre was the first theatre building in Europe to be illuminated by Thomas Edison's electric light bulbs; at that time it was a completely new invention and there were no power plants built in the city, so a small steam power plant was built nearby just to power the theatre, and Edison came to Brno in 1911 to see it. The most commercially successful theatre in Brno is the Brno City Theatre, founded in 1945; its performances are usually sold out. They also stage about 150 performances abroad every year. The theatre's repertoire consists primarily of musical and dramatic shows. There are a variety of smaller theatres in Brno, including the Bolek Polivka Theatre, the Goose on a String Theatre (\""Divadlo Husa na provázku\""), HaDivadlo, Radost Puppet Theatre (\""loutkové divadlo Radost\""), and Polárka Theatre. The Mahen Theatre was originally called the City Theatre, and until 1918 it performed exclusively in German and was not part of the National Theatre of Brno. Between 1971 and 1978, some plays were performed at the Brno Exhibition Centre due to reconstruction of the Mahen Theatre."",
 ""url"": ""https://en.wikipedia.org/wiki/Brno"",
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/Brno,"{
+https://en.wikipedia.org/wiki/Brno,1,"{
 ""header"": ""Transportation in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts a comprehensive public transportation system, including tram, trolleybus, and bus lines, along with plans for a light rail metro system. The city serves as a major railway and road transport hub, connecting to nearby municipalities and international destinations. Additionally, Brno promotes cycling with extensive tracks and offers recreational flying activities at two airports."",
@@ -204,7 +204,7 @@ https://en.wikipedia.org/wiki/Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Notable Figures from Brno, Czech Republic"",
 ""record_type"": ""static"",
 ""brief"": ""The city of Brno, Czech Republic, has been home to many prominent individuals across various fields. From scientist Gregor Mendel, known for his groundbreaking pea plant experiments, to composer Leoš Janáček and writer Milan Kundera, Brno has nurtured talent in science, literature, and music. Additionally, notable figures in academia, such as Karel Absolon and Kurt Gödel, have contributed significantly to their respective fields while having roots in Brno."",
@@ -212,7 +212,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/List_of_people_from_Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Notable Figures from Brno in government and politics"",
 ""record_type"": ""static"",
 ""brief"": ""The list includes notable figures from Brno, ranging from politicians like Zuzana Brzobohatá and Michal Hašek to writers such as Milan Kundera and Bohumil Hrabal."",
@@ -221,7 +221,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Notable Musicians and Composers from Brno"",
 ""record_type"": ""static"",
 ""brief"": ""The city of Brno has produced numerous notable musicians and composers throughout history, including renowned figures such as Leoš Janáček, Erich Wolfgang Korngold, and Gustav Brom."",
@@ -230,7 +230,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Prominent Figures from Brno in Visual Arts"",
 ""record_type"": ""static"",
 ""brief"": ""The article highlights notable individuals from Brno in visual arts, including Dina Babbitt, Franta Belsky, Helena Bochořáková-Dittrichová, Tamara Divíšková, Mathilde Esch, Bohuslav Fuchs, Jan Kotěra, Lubo Kristek, Adolf Loos, Jakub Obrovský, Antonín Procházka, Alfred Roller, Anna Ticho, and Norbert Troller."",
@@ -239,7 +239,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Notable Figures from Brno in Film and Theatre"",
 ""record_type"": ""static"",
 ""brief"": ""The list includes notable figures from Brno who have made significant contributions to the film and theatre industry."",
@@ -248,7 +248,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Notable Figures from Brno in Sports"",
 ""record_type"": ""static"",
 ""brief"": ""The list highlights notable sports personalities from Brno, including UFC fighter Jiří Procházka, NHL hockey player Tomáš Vincour, and rock climber Adam Ondra."",
@@ -257,7 +257,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Notable Religious Figures from Brno"",
 ""record_type"": ""static"",
 ""brief"": ""The list includes notable religious figures originating from Brno, such as Zvi Dershowitz, a conservative rabbi, Mathias Franz Graf von Chorinsky, the first Bishop of Brno, and Michael Czerny, a Canadian cardinal."",
@@ -265,7 +265,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/List_of_people_from_Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
+https://en.wikipedia.org/wiki/List_of_people_from_Brno,1,"{
 ""header"": ""Other notable Individuals from Brno"",
 ""record_type"": ""static"",
 ""brief"": ""The text mentions notable individuals from Brno, including Freddie Hornik, a British fashion entrepreneur, Barbara Lauwers, a World War II counter-intelligence officer, and Bedřich Pokorný, a Czechoslovak police commander and secret service officer."",
@@ -273,7 +273,7 @@ https://en.wikipedia.org/wiki/List_of_people_from_Brno,"{
 ""url"": ""https://en.wikipedia.org/wiki/List_of_people_from_Brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Bohunice Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""The Brno-Bohunice municipal district is located at Dlouhá 3, 625 00 Brno. It can be reached via phone at +420 547 423 810 or +420 547 352 946, or by email at info@bohunice.brno.cz."",
@@ -282,7 +282,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Dlouhá 3, 625 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Municipal District Brno-Bosonohy"",
 ""record_type"": ""administrative"",
 ""brief"": ""The Brno-Bosonohy municipal district is located at Bosonožské nám. 1, 642 00 Brno."",
@@ -291,7 +291,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Bosonožské nám. 1, 642 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Bystrc Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Bystrc is a municipal district located in Brno, Czech Republic. It encompasses various administrative and residential areas, providing services to its residents."",
@@ -300,7 +300,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""nám. 28. dubna 60, 635 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno-Černovice Municipality"",
 ""record_type"": ""administrative"",
 ""brief"": ""This text provides an overview of the Brno-Černovice municipality, including contact information such as address and email."",
@@ -309,7 +309,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Bolzanova 1, 618 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Chrlice Municipal District Overview"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Chrlice is one of the municipal districts of Brno, Czech Republic, located at Chrlické nám. 4, 643 00 Brno."",
@@ -319,7 +319,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""address"":""Chrlické nám. 4, 643 00 Brno""
 }
 "
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Ivanovice Municipality"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Ivanovice is a municipal district located in Brno, Czech Republic. Its contact information includes Mácova 3, 621 00 Brno, and the phone number +420 541 226 695, with email info@ivanovice.brno.cz."",
@@ -328,7 +328,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Mácova 3, 621 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Jehnice Municipality"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Jehnice is a municipal district located in Brno, Czech Republic, with its administrative address at Nám. 3. května 5, 621 00 Brno. Contact information includes the phone number +420 541 237 425 and email info@brno-jehnice.cz."",
@@ -337,7 +337,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Nám. 3. května 5, 621 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-jih Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-jih Municipal District is located in Brno, Czech Republic, and is represented by the Mariánské náměstí 13 address. Contact information includes +420 545 427 511 and podatelna@brno-jih.cz."",
@@ -347,7 +347,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""address"": ""Mariánské nám. 13, 617 00 Brno""
 }
 "
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Jundrov Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Jundrov is one of the municipal districts in Brno, Czech Republic, located at Veslařská 56. Contact information includes phone numbers +420 541 420 361 and +420 541 220 001, and email podatelna@brno-jih.cz."",
@@ -356,7 +356,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Veslařská 56, 637 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Kníničky Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brief information about the Brno-Kníničky Municipal District."",
@@ -365,7 +365,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Nová 11, 635 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno City Districts: Brno-Kohoutovice"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brief overview of the Brno-Kohoutovice city district."",
@@ -374,7 +374,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"":""Bašného 36, 623 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno City Districts - Brno-Komín"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Komín is one of the city districts of Brno, Czech Republic. It is located at Vavřinecká 15, 624 00 Brno."",
@@ -383,7 +383,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Vavřinecká 15, 624 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Královo Pole Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Královo Pole Municipal District, located at Palackého tř. 59, 612 93 Brno, Czech Republic, is an administrative division in Brno."",
@@ -392,7 +392,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"":""Palackého tř. 59, 612 93 Brno, Czech Republic""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Líšeň Municipal District Overview"",
 ""record_type"": ""administrative"",
 ""brief"": ""The Brno-Líšeň Municipal District, located in Brno, Czech Republic, offers various administrative services and facilities to its residents, including contact information, such as Jírova 2, 628 00 Brno, and contact email info@brno-lisen.cz."",
@@ -401,7 +401,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Jírova 2, 628 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Maloměřice a Obřany Municipality"",
 ""record_type"": ""administrative"",
 ""brief"": ""Information about the Brno-Maloměřice a Obřany municipality, including contact details and address."",
@@ -410,7 +410,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Selská 66, 614 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Medlánky: Administrative Information"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Medlánky is a municipal district located in Brno, Czech Republic. The administrative contact information includes the address Hudcova 7, 621 00 Brno, phone numbers +420 538 706 250 and +420 538 706 255, and email address podatelna@medlanky.brno.cz."",
@@ -419,7 +419,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Hudcova 7, 621 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Municipal Districts - Brno-Nový Lískovec"",
 ""record_type"": ""administrative"",
 ""brief"": ""The article provides an overview of the municipal district of Brno-Nový Lískovec, including its address, contact information, and email."",
@@ -428,7 +428,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Oblá 75a, 634 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Ořešín District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brief about the Brno-Ořešín District."",
@@ -437,7 +437,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""U Zvoničky 12/4, 621 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Řečkovice a Mokrá Hora District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Information about the Brno-Řečkovice a Mokrá Hora district, including its address and contact details."",
@@ -446,7 +446,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Palackého nám. 11, 621 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno-North District"",
 ""record_type"": ""administrative"",
 ""brief"": ""The Brno-North District, located at Bratislavská 70, 601 47 Brno, is a significant administrative division in Brno, Czech Republic. Contact information: +420 545 542 111, email: info@sever.brno.cz."",
@@ -455,7 +455,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Bratislavská 70, 601 47 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Slatina Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Slatina is a municipal district located in Brno, Czech Republic, with its administrative center at Tilhonova 59. Contact information: +420 533 433 573, +420 545 216 285, info@mcslatina.cz"",
@@ -464,7 +464,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Tilhonova 59, 627 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Starý Lískovec Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Starý Lískovec is a municipal district located at Oderská 4, 625 00 Brno. Contact: +420 547 139 211, +420 547 139 230, info@staryliskovec.cz."",
@@ -474,7 +474,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""address"": ""Oderská 4, 625 00 Brno""
 }
 "
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-střed Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""The Municipal District of Brno-střed is situated at Dominikánská 2, 601 69 Brno. It can be contacted at +420 542 526 111 or via email at podatelna.stred@brno.cz."",
@@ -483,7 +483,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Dominikánská 2, 601 69 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Brno-Tuřany Municipal District Overview"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Tuřany is a municipal district located in Brno, Czech Republic, characterized by Tuřanské Square and administrative buildings."",
@@ -493,7 +493,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""address"": ""Tuřanské nám. 1, 620 00 Brno""
 }
 "
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno-Útěchov Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""The overview provides information about the Brno-Útěchov Municipal District, including its location, contact details, and administrative structure."",
@@ -502,7 +502,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Adamovská 6, 644 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno Districts - Brno-Vinohrady"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Vinohrady is one of the districts in Brno, Czech Republic, located at Velkopavlovická 25, 628 00 Brno. Contact information includes phone: +420 511 189 001 and email: info@vinohrady.brno.cz."",
@@ -511,7 +511,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Velkopavlovická 25, 628 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Overview of Brno-Žabovřesky Municipal District"",
 ""record_type"": ""administrative"",
 ""brief"": ""The Brno-Žabovřesky Municipal District, located at Horova 28, 616 00 Brno, Czech Republic, provides information and services for its residents."",
@@ -520,7 +520,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Horova 28, 616 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Municipality about Brno-Žebětín"",
 ""record_type"": ""administrative"",
 ""brief"": ""Brno-Žebětín is a district located in Brno, Czech Republic. It is represented by Křivánkovo Square, and its contact information includes a phone number and email address."",
@@ -529,7 +529,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Křivánkovo nám. 35, 641 00 Brno""
 }"
-https://www.brno.cz/mestske-casti-prehled,"{
+https://www.brno.cz/mestske-casti-prehled,1,"{
 ""header"": ""Administrative Division Overview: Municipality Brno-Židenice"",
 ""record_type"": ""administrative"",
 ""brief"": ""The article provides an overview of the municipality of Brno-Židenice, including its administrative details such as address, contact numbers, and email."",
@@ -539,7 +539,7 @@ https://www.brno.cz/mestske-casti-prehled,"{
 ""address"": ""Gajdošova 7, 615 00 Brno""
 }
 "
-https://www.brnoexpatcentre.eu/about-us/,"{
+https://www.brnoexpatcentre.eu/about-us/,1,"{
 ""header"": ""Brno Expat Centre - About Us"",
 ""record_type"": ""static"",
 ""brief"": ""The Brno Expat Centre is a free public service supported by the City of Brno, dedicated to assisting foreign professionals with various services such as individual consultation, networking events, and business development, all aimed at helping them settle in Brno and become part of the city's life."",
@@ -548,7 +548,7 @@ https://www.brnoexpatcentre.eu/about-us/,"{
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/,"{
+https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/,1,"{
 ""header"": ""Residence Permits for Expats in Brno: A Guide to the Immigration Office"",
 ""record_type"": ""static"",
 ""brief"": ""This guide provides information for expats in Brno on navigating the Immigration Office, including contact details, appointment booking, and relocation services."",
@@ -556,14 +556,14 @@ https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/,"{
 ""url"": ""https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/,"{
+https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/,1,"{
 ""header"": ""Residence Permit: Change of Address for EU and Non-EU Citizens"",
 ""record_type"": ""static"",
 ""brief"": ""The article outlines the requirements for reporting a change of residence address for both EU and non-EU citizens in the Czech Republic. It details the necessary documents and procedures for reporting the change of address, including submission by post and in person."", ""text"": ""Change of address for EU citizens or their family members with Temporary residence cards requires reporting the change within 30 working days if it is expected to last longer than 180 days. A similar requirement applies to foreigners with a long-term visa or residence card, as well as those with a permanent residence permit. The article provides a list of required documents and details the process for reporting the address change, including submission options by post and in person."",
 ""url"": ""https://www.brnoexpatcentre.eu/im-an-expat/residence-permits/"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"":""Must-See Sights in Brno"",
 ""record_type"":""static"",
 ""brief"":""Discover Brno's essential sights including the Vegetable Market, Špilberk Castle, Villa Tugendhat, Petrov, St James Square, and Old Town Hall."",
@@ -571,7 +571,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""url"":""https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf"",
 ""date_fetched"":""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"":""Theatres and Philharmonic Venues in Brno"",
 ""record_type"":""static"",
 ""brief"":""Explore the vibrant theatre and philharmonic scene in Brno, featuring notable venues like Reduta Theatre, Janáček Theatre, Mahen Theatre, and more."",
@@ -579,7 +579,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""url"":""https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf"",
 ""date_fetched"":""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"": ""Old Town Hall in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Discover the historic significance of Brno's Old Town Hall, featuring the iconic statue Courage and serving as the city government center for centuries."",
@@ -588,7 +588,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"": ""Moravian Gallery in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Explore the rich art collection and cultural events at the Moravian Gallery, the second largest art museum in the Czech Republic, tracing back its history to 1818."",
@@ -597,7 +597,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"": ""National Theatre in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Learn about the history and cultural significance of the National Theatre in Brno, established in 1881, following the model of the National Theatre in Prague."",
@@ -606,7 +606,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"": ""Petrov Cathedral in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Explore the iconic Petrov Cathedral, a dominant feature of Brno's skyline, with origins dating back to the 12th century and notable architectural reconstructions."",
@@ -615,7 +615,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.pdf,1,"{
 ""header"": ""Špilberk Castle in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Explore the history and architectural grandeur of Špilberk Castle, a medieval fortress turned military prison, now a cultural venue housing museums and hosting events."",
@@ -624,7 +624,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/06/TICBRNO-MALY_OFICIAL-EN-WEB.p
 ""date_fetched"": ""2024-03-01""
 }
 "
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Brno's Diverse Music Scene"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts a diverse music scene, ranging from traditional performances to avant-garde compositions, with festivals like Uprostřed and Brno Music Marathon animating the city's streets."",
@@ -632,7 +632,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Author´s Reading Month and Film Culture"",
 ""record_type"": ""static"",
 ""brief"": ""Brno hosts prominent literary events such as Authors’ Reading Month and has a vibrant film culture with festivals like Brno 16 International Short Film Festival, catering to diverse interests."",
@@ -640,7 +640,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Are Art & History Loved?"",
 ""record_type"": ""static"",
 ""brief"": ""Art in Brno includes art works and installations in galleries and museums, as well as in clubs, cafes, and the streets. Visitors can explore various venues such as the City Museum at Špilberk Castle, FAIT GALLERY, Moravian Gallery, and the Mendel Museum. Brno also boasts a rich literary and theatrical scene, with numerous libraries, bookshops, and theatres hosting diverse performances and festivals."",
@@ -648,7 +648,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Literature and Films"",
 ""record_type"": ""static"",
 ""brief"": ""Brno has a rich literary heritage, with a history of readers' clubs and regular newspapers dating back to the 18th century. The city is also known for its vibrant theatrical scene, with various venues hosting contemporary plays, musicals, and festivals. Additionally, Brno offers a diverse range of cultural events, including concerts, film screenings, and literary gatherings."",
@@ -656,7 +656,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""A Feast for the Ears"",
 ""record_type"": ""static"",
 ""brief"": ""Brno offers a vibrant music scene, with frequent concerts featuring prominent musicians from alternative scenes and local and international bands. The city hosts concerts in various venues, including clubs, halls, and the streets, showcasing diverse genres such as jazz, rock, folk, and electronic music. Additionally, Brno's electronic scene is gaining popularity, with parties often held in parks and streets, featuring local producers and artists."",
@@ -664,7 +664,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Renovations to the Museum of Applied Arts Brno"",
 ""record_type"": ""static"",
 ""brief"": ""The Museum of Applied Arts in Brno underwent renovations to update its exhibitions and collection, featuring contemporary designs alongside functional everyday objects. Renowned names in applied arts, such as Maxim Velčovský and Olgoj Chorchoj studio, were showcased through temporary exhibitions."",
@@ -672,7 +672,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""City of Design"",
 ""record_type"": ""static"",
 ""brief"": ""Brno is hailed as a city of design, featuring innovative spaces and exhibitions. Notable highlights include a cafe served by robots, an interactive art installation named “Cloud”, and a permanent exhibition showcasing the works of Krištof Kintera."",
@@ -680,7 +680,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Exhibition Dramaturgy"",
 ""record_type"": ""static"",
 ""brief"": ""The Moravian Gallery showcases a diverse range of exhibitions, including winners of the Czech Grand Design prize and retrospectives of renowned designers. Notable exhibits feature works by Vrtiška & Žák, Jiří Pelcl, and contemporary Czech fashion designers."",
@@ -688,7 +688,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""A Slow Walk"",
 ""record_type"": ""static"",
 ""brief"": ""Exploring Brno by foot offers a unique connection to the city's essence. Walking allows one to uncover hidden stories, observe people and architecture, and experience the city's vibrant atmosphere."",
@@ -696,7 +696,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""GREEN CITY"",
 ""record_type"": ""static"",
 ""brief"": ""Brno's old urban parks showcase diverse garden designs, with Lužánky being the oldest public park in the country, featuring a neo-Renaissance pavilion and various memorials."",
@@ -704,7 +704,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""FADED GLORY OF RENOWNED FACTORIES"",
 ""record_type"": ""static"",
 ""brief"": ""Brno's textile industry flourished in the 18th and 19th centuries, leading to the city's nickname as the 'Moravian Manchester'. Today, former factory buildings host cultural events, and original worker colonies like Cejl Street remain significant."",
@@ -712,7 +712,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Leisure in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno and its surroundings offer a variety of leisure activities, including visits to memorials and architecture, exploration of the city's unique spots, family-friendly entertainment venues, nature trips, cycling, and tours of castles and vineyards."",
@@ -720,7 +720,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""TAKE YOUR KIDS TO THE CITY"",
 ""record_type"": ""static"",
 ""brief"": ""Brno provides numerous activities for children, including visits to cafes with kids corners, playgrounds like Jungle Park and TOBOGA Bongo, practical experiences at traffic playgrounds, garden railways, and opportunities to see animals at parks and the Brno Zoo."",
@@ -728,7 +728,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Experiment in your time in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Brno offers educational and entertaining opportunities for both young and old, with attractions like VIDA! science amusement park, Brno Technical Museum, Brno Observatory and Planetarium, wildlife experiences at Holedná Game Reserve and Hády Llama Centre, and Open Gardens showcasing art and natural phenomena."",
@@ -736,7 +736,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""STATUES"",
 ""record_type"": ""static"",
 ""brief"": ""Brno boasts a rich collection of statues and art installations, with many honoring prominent historical figures like Gregor Johann Mendel, Louis Raduit de Souches, Jan Skácel, and Faper Martin Středa, as well as featuring contemporary works such as Tribute to Edison and artistic allegories on Moravian Square."",
@@ -744,7 +744,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Art and Culture in Moravian Square"",
 ""record_type"": ""static"",
 ""brief"": ""Explore the artistic wonders of Moravian Square, including statues representing Plato's virtues, a Red Army soldier monument, and the Tribute to Edison featuring giant light bulbs."",
@@ -752,7 +752,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Excursions from Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Discover nearby attractions such as observation towers, hiking trails, historic sites, and UNESCO World Heritage Sites, easily accessible from Brno."",
@@ -760,7 +760,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Fiery Horse and Dragon Exhibition"",
 ""record_type"": ""static"",
 ""brief"": ""Experience a multimedia exhibition showcasing legends from Brno, including animations of historical events and recordings of local legends. Visit the special website for more information."",
@@ -768,7 +768,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Ossuary beneath the Church of St. James"",
 ""record_type"": ""static"",
 ""brief"": ""Explore the second largest ossuary in Europe, containing over 50,000 human remains from various historical events, now a tourist attraction and place of reverence."",
@@ -776,7 +776,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Denis Shelter"",
 ""record_type"": ""static"",
 ""brief"": ""Discover the interconnected corridors of Denis Shelter, offering insights into underground Brno's history and tours."",
@@ -784,7 +784,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Stone Temple: Lapidarium at Špilberk Castle"",
 ""record_type"": ""static"",
 ""brief"": ""Experience Brno's first publicly accessible water tanks within the historical setting of Špilberk Castle, showcasing sculptures, gravestones, and stone ornamentation."",
@@ -792,7 +792,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""10-Z Bunker"",
 ""record_type"": ""static"",
 ""brief"": ""Explore the secretive 10-Z bunker, equipped with its own facilities, offering a unique experience of Brno's communist-era history."",
@@ -800,7 +800,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""On and Under the Water"",
 ""record_type"": ""static"",
 ""brief"": ""Experience aquatic activities in Brno, including unique swimming pools and recreational areas along the Svratka River."",
@@ -808,7 +808,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Shopping"",
 ""record_type"": ""static"",
 ""brief"": ""Guide to shopping experiences in Brno, including markets, fashion, and souvenirs."",
@@ -816,7 +816,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Fairs, Markets, and Trade"",
 ""record_type"": ""static"",
 ""brief"": ""Information on design shops and fashion in Brno."",
@@ -824,7 +824,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Something From Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Overview of unique souvenirs and gifts available in Brno."",
@@ -832,7 +832,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Everything in One Place"",
 ""record_type"": ""static"",
 ""brief"": ""Overview of shopping centers in Brno."",
@@ -840,7 +840,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Get Advice on How to Enjoy Brno"",
 ""record_type"": ""static"",
 ""brief"": ""TIC BRNO offers the BRNOPAS tourist card with discounts and free visits to various destinations in Brno and South Moravia."",
@@ -848,7 +848,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""1 Day in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Discover what to do in Brno within 24 hours, including visits to landmarks like the Old Town Hall tower, Špilberk Castle, and various villas."",
@@ -856,7 +856,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""3 Days Are Best"",
 ""record_type"": ""static"",
 ""brief"": ""Explore Brno thoroughly over three days with a BRNOPAS, including visits to landmarks, museums, and family-friendly attractions."",
@@ -864,7 +864,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Advent & Christmas in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Experience the magical atmosphere of Advent and Christmas in Brno, featuring culinary delights, live music, and entertainment for all ages, including Christmas markets offering a variety of high-quality, locally sourced gifts."",
@@ -872,7 +872,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Christmas Gifts from Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Discover unique Christmas gifts from Brno, including original mugs designed by local artists, remarkable books, candles, chocolate, wine, and more available at TIC BRNO Information Centres or online."",
@@ -880,23 +880,23 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Do Not Miss Events in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Explore a selection of the most intriguing events happening in Brno, ranging from exhibitions and festivals to concerts and cultural nights throughout the year."",
-""text"": ""Throughout 2023, various events including exhibitions, festivals, concerts, and cultural nights are happening in Brno, offering visitors a diverse range of experiences."",
+""text"": ""Throughout every year, various events including exhibitions, festivals, concerts, and cultural nights are happening in Brno, offering visitors a diverse range of experiences."",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Ignis Brunensis"",
 ""record_type"": ""static"",
 ""brief"": ""Witness the spectacular Ignis Brunensis global fireworks competition featuring four artistic fireworks performances at the Brno reservoir, accompanied by a festival of fun."",
-""text"": ""A global fireworks competition with a festival of fun. Four spectacular artistic fireworks performances at the Brno reservoir."",
+""text"": ""Each summer: A global fireworks competition with a festival of fun. Four spectacular artistic fireworks performances at the Brno reservoir."",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Summer Events in Brno"",
 ""record_type"": ""static"",
 ""brief"": ""Enjoy a variety of summer events in Brno, including theatre performances, concerts, and open-air cinemas at different locations throughout the city from June to August."",
@@ -904,15 +904,15 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Festival Planet"",
 ""record_type"": ""static"",
-""brief"": ""In July and August, visitors can enjoy summer activities in the park on Kraví hora, including 10-metre-tall inflated models of the planets, screenings in the digitarium, and a summer cinema. Additionally, for a few days in August, the city centre hosts a festival with Brazilian music performances, tastings of Brazilian food, and a carnival street party."",
+""brief"": ""Echa summer: In July and August, visitors can enjoy summer activities in the park on Kraví hora, including 10-metre-tall inflated models of the planets, screenings in the digitarium, and a summer cinema. Additionally, for a few days in August, the city centre hosts a festival with Brazilian music performances, tastings of Brazilian food, and a carnival street party."",
 ""text"": ""In the park on Kraví hora, we can enjoy summer with 10-metre-tall inflated models of the planets, screenings in the digitarium, and a summer cinema with the best sci-fi films. For a few days the city centre will sway to the rhythms and temperament of Brazil. You can expect loads of music performances, tastings of Brazilian food, and a carnival street party."",
 ""url"": ""https://www.hvezdarna.cz, https://www.brasilfestbrno.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Jakubák"",
 ""record_type"": ""static"",
 ""brief"": ""A square in Brno filled with businesses offering a unique energy and atmosphere behind the Church of St James, providing a programme for the entire summer."",
@@ -920,39 +920,39 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.jakubak.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Prima Fresh Festival"",
 ""record_type"": ""static"",
 ""brief"": ""A festival of good food and drink featuring culinary experiences, fine dining, authentic experiences from around the world, a cooking show with famous chefs, and live concerts."",
-""text"": ""June. A festival of good food and drink. Culinary experiences, fine dining, authentic experiences from around the world, a cooking show with famous chefs, and live concerts."",
+""text"": ""Each June. A festival of good food and drink. Culinary experiences, fine dining, authentic experiences from around the world, a cooking show with famous chefs, and live concerts."",
 ""url"": ""https://www.freshfestival.cz/brno"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Festival Uprostřed (In the Middle Festival)"",
 ""record_type"": ""static"",
 ""brief"": ""A summer festival enlivening the streets of Brno center with a varied program."",
-""text"": ""July – August. In the summer months, this festival brings life to the Brno centre streets. It offers a varied programme."",
+""text"": ""Each July – August. In the summer months, this festival brings life to the Brno centre streets. It offers a varied programme."",
 ""url"": ""https://www.festivaluprostred.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
-""header"": ""Sportovní Park Riviera (Riviera Sports Park)"",
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
+""header"": ""Sportovní Park Riviera (Riviera Sports Park Event)"",
 ""record_type"": ""static"",
 ""brief"": ""A nine-day event transforming the Riviera swimming area into a large sports park where visitors can try various sports under the supervision of Brno sports clubs."",
-""text"": ""June. For 9 days, the Riviéra swimming area will transform into one big sports park. Visitors can try several different sports supervised by Brno sports clubs."",
+""text"": ""Each June. For 9 days, the Riviéra swimming area will transform into one big sports park. Visitors can try several different sports supervised by Brno sports clubs."",
 ""url"": ""https://www.starez.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Letní Shakespearovské Slavnosti (Summer Shakespeare Festival)"",
 ""record_type"": ""static"",
 ""brief"": ""The largest and oldest Shakespeare festival in the Czech Republic, featuring established performances from previous years and premieres."",
-""text"": ""July–August. The largest and oldest Shakespeare festival in the Czech Republic. Visitors can again enjoy established performances from previous years and also premieres. You can find a detailed programme and more information at www.gotobrno.cz/en in the section Events in Brno. TIC BRNO recommends."",
+""text"": ""Each July–August. The largest and oldest Shakespeare festival in the Czech Republic. Visitors can again enjoy established performances from previous years and also premieres. You can find a detailed programme and more information at www.gotobrno.cz/en in the section Events in Brno. TIC BRNO recommends."",
 ""url"": ""https://www.brno.shakespeare.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""MENDEL FESTIVAL"",
 ""record_type"": ""static"",
 ""brief"": ""The Mendel Festival in July aims to introduce the figure of G. J. Mendel to the general public, combining science, faith, and fun."",
@@ -960,64 +960,64 @@ https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
 ""url"": ""https://www.mendelje.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""MARATON HUDBY BRNO (BRNO MUSIC MARATHON)"",
 ""record_type"": ""static"",
 ""brief"": ""The Brno Music Marathon in August features a continuous flow of professional and amateur music productions from all genres across the city."",
-""text"": ""This multi-genre music festival will see a continuous flow across Brno of professional and amateur music productions from all genres."",
+""text"": ""Each August, this multi-genre music festival will see a continuous flow across Brno of professional and amateur music productions from all genres."",
 ""url"": ""https://www.maratonhudby.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""FESTIVAL VĚDY (SCIENCE FESTIVAL)"",
 ""record_type"": ""static"",
 ""brief"": ""The Science Festival in September showcases interactive demonstrations from over 40 institutions focused on current scientific advancements and achievements."",
-""text"": ""Brno is full of science and, what’s more, with science and scientists you never get bored! More than 40 institutions have prepared for all visitors interactive demonstrations of what they’re currently focused on or what they’ve already achieved."",
+""text"": ""Brno is full of science and, what’s more, with science and scientists you never get bored! More than 40 institutions have prepared for all visitors interactive demonstrations of what they’re currently focused on or what they’ve already achieved. The festival usually takes part each September in Brno"",
 ""url"": ""https://www.festivalvedy.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""POP MESSE"",
 ""record_type"": ""static"",
 ""brief"": ""Pop Messe in July presents a diverse music program focused on young, multi-genre music that challenges conventional definitions of 'pop'."",
-""text"": ""Pop Messe is a music festival. The music programme primarily deals with young, multi-genre music that stretches conventional definitions of “pop”."",
+""text"": ""Pop Messe is a music festival that takes part echa July in Brno. The music programme primarily deals with young, multi-genre music that stretches conventional definitions of “pop”."",
 ""url"": ""https://www.popmesse.cz"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""BRNO DAY"",
 ""record_type"": ""static"",
 ""brief"": ""Brno Day celebrates the city's defense against the Swedish army."",
-""text"": ""August, The city’s celebration of the heroic defence by its citizens against the Swedish army., www.denbrna.cz"",
+""text"": ""Each August, The city’s celebration of the heroic defence by its citizens against the Swedish army., www.denbrna.cz"",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""ŠPILBERK LIVES!"",
 ""record_type"": ""static"",
 ""brief"": ""Špilberk Lives! is a two-day traditional event at the castle for families, featuring games, entertainment, and refreshment stands."",
-""text"": ""September, A two-day traditional event for the entire family, during which kids can, like every year, play a game across the entire castle. There will be a wide range of entertainment, stands with refreshments, and much more., www.spilberk.cz"",
+""text"": ""Each September, A two-day traditional event for the entire family, during which kids can, like every year, play a game across the entire castle. There will be a wide range of entertainment, stands with refreshments, and much more., www.spilberk.cz"",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""OPEN-AIR FESTIVAL AT ŠPILBERK"",
 ""record_type"": ""static"",
 ""brief"": ""The open-air festival at Špilberk offers a musical banquet for lovers of good music."",
-""text"": ""August, This musical banquet under pe August sky will likely satisfy all lovers of good music. You can find a detailed programme and more information at www.gotobrno.cz/en in pe section Events in Brno."",
+""text"": ""Each August, This musical banquet under pe August sky will likely satisfy all lovers of good music. You can find a detailed programme and more information at www.gotobrno.cz/en in pe section Events in Brno."",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf,1,"{
 ""header"": ""Information Centre at Radnická"",
-""record_type"": ""static"",
+""record_type"": ""place"",
 ""brief"": ""The information center at Radnická provides daily assistance to visitors in Brno."",
 ""text"": ""Open daily from 9:00 to 18:00, Radnická 8, 602 00 Brno, +420 773 768 103, info@ticbrno.cz, www.ticbrno.cz"",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/03/doBrna_EN_2023-web.pdf"",
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Radnická 8, 602 00 Brno""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""Atelier Bar & Bistro"",
 ""record_type"": ""place"",
 ""brief"": ""Relaxed and likeable, ideal for a romantic dinner at a beautiful place. Pleasant seating in a playful interior or on a terrace in the courtyard. Atelier connects the traditional with the modern, in both food and cocktails."",
@@ -1026,7 +1026,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Kobližná 2""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""Bistro Bastardo"",
 ""record_type"": ""place"",
 ""brief"": ""Discover the true Mexico without spending hours on a plane. An authentic Mexican bistro with so much to see! Bastardo first catches your eye with its uncommon and original interior, including the signature garbage bins used as furniture."",
@@ -1035,7 +1035,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""náměstí Svobody 21""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""BRATRS bistro"",
 ""record_type"": ""place"",
 ""brief"": ""A true jewel, worth the ride to the outskirts of Brno. Hopping on tram No. 1 and riding it all the way to the end station in Bystrc? Totally worth it! Their recipes come from all over the world, but the food is made mostly from locally sourced, seasonal ingredients."",
@@ -1044,7 +1044,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Kamechy 2771""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""Castellana Trattoria"",
 ""record_type"": ""place"",
 ""brief"": ""Authentic Italian experience in Brno with a selection of over 170 wines."",
@@ -1053,7 +1053,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Novobranská 4, Brno""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""Domovina"",
 ""record_type"": ""place"",
 ""brief"": ""Vietnamese bistro offering traditional meals with a fusion twist at the Vegetable Market."",
@@ -1062,7 +1062,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""date_fetched"": ""2024-03-01"",
 ""address"": ""Zelný trh 10, Brno""
 }"
-https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,"{
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""EGGO Break Feast bistro"",
 ""record_type"": ""place"",
 ""brief"": ""Bistro specializing in breakfast and brunch, now serving snacks and beverages too."",

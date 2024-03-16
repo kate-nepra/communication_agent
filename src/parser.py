@@ -34,7 +34,7 @@ class Duration:
     end: str = None
 
 
-def get_parsed_content(url: str, content: str) -> BaseSchema:
+def get_parsed_content(url: str, content: str) -> BaseSchema:  # TODO divide models
     results: list[BaseSchema] = []
 
     def add_place(header: str, text: str, brief: str, address: str, url: str) -> str:
