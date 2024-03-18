@@ -60,31 +60,31 @@ class VectorStorage:
             "properties": [
                 {
                     "name": "header",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
-                    "name": "recordType",
-                    "dataType": ["string"]
+                    "name": "record_type",
+                    "dataType": "string"
                 },
                 {
                     "name": "brief",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
                     "name": "text",
-                    "dataType": ["text"]
+                    "dataType": "text"
                 },
                 {
                     "name": "url",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
                     "name": "date_fetched",
-                    "dataType": ["date"]
+                    "dataType": "date"
                 },
                 {
                     "name": "metadata",
-                    "dataType": ["string"]
+                    "dataType": "dictionary"
                 }
             ]
         }
@@ -98,31 +98,31 @@ class VectorStorage:
             "properties": [
                 {
                     "name": "header",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
-                    "name": "recordType",
-                    "dataType": ["string"]
+                    "name": "record_type",
+                    "dataType": "string"
                 },
                 {
                     "name": "brief",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
                     "name": "text",
-                    "dataType": ["text"]
+                    "dataType": "text"
                 },
                 {
                     "name": "url",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
                     "name": "date_fetched",
-                    "dataType": ["date"]
+                    "dataType": "date"
                 },
                 {
                     "name": "address",
-                    "dataType": ["string"]
+                    "dataType": "string"
                 },
                 {
                     "name": "dates",
@@ -135,9 +135,18 @@ class VectorStorage:
 
 
 if __name__ == "__main__":
+    data_to_load = {
+        "header": "Bistro Bastardo",
+        "record_type": "place",
+        "brief": "Discover the true Mexico without spending hours on a plane. An authentic Mexican bistro with so much to see! Bastardo first catches your eye with its uncommon and original interior, including the signature garbage bins used as furniture.",
+        "text": "Discover the true Mexico without spending hours on a plane. An authentic Mexican bistro with so much to see! Watch the experienced taqueros from all over Mexico work their magic in the kitchen, preparing all kinds of tacos as well as burritos, quesadillas, tortas, fresh salsas, and churros. Bastardo first catches your eye with its uncommon and original interior, including the signature garbage bins used as furniture. You'll find their second location at Štefánikova 20. ¡Bienvenido a México!. Contact:  FB: bistrobastardo",
+        "url": "https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf",
+        "date_fetched": "2024-03-01",
+        "metadata": {"address": "náměstí Svobody 21"}
+    }
     vs = VectorStorage()
     source_db = SourcesDB()
     contents = source_db.get_all_parsed_sources_contents_by_type('base')
     vs.create_schemas()
-    vs.import_data(contents, "BaseSchema")
+    vs.import_stringed_json_data(contents, "BaseSchema")
     vs.close()

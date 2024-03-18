@@ -1,9 +1,13 @@
 import openai
+from dotenv import load_dotenv
+
 from agent.agent import Agent
 
 from transformers import pipeline
-
+import os
 from src.constants import RECORD_TYPE_LABELS
+
+load_dotenv()
 
 
 def get_content_type_simple(text: str, labels: list[str] = RECORD_TYPE_LABELS) -> str:
@@ -36,7 +40,7 @@ def get_content_type_prompt(content: str) -> str:  # Todo add model choice
         results.append("static")
         return "The static entity was added successfully, you can continue with the further processing."
 
-    agent = Agent(api_key="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", model="gpt-3.5-turbo-1106")
+    agent = Agent(api_key=os.getenv('OPEN_AI_API_KEY'), model="gpt-3.5-turbo-1106")
 
     agent.add_function(assign_place)
     agent.add_function(assign_event)
