@@ -469,10 +469,11 @@ class WebScraper:
 if __name__ == '__main__':
     ws = WebScraper(
         # 'https://www.gotobrno.cz/en/brno-phenomenon/being-a-guide-in-the-tutankhamun-villa-rapeseed-liquor-cinderella-and-the-patience-of-a-saint/')
-        # 'https://cosedeje.brno.cz/w/odpoledni-taborak-motosalon-ci-roboti-ve-vida-objevte-co-prinasi-vikend')
+        # 'https://www.gotobrno.cz/en/place/church-of-st-james-kostel-sv-jakuba/')
         # 'https://en.wikipedia.org/wiki/List_of_people_from_Brno')
-        'https://www.brno.cz/mestske-casti-prehled')
-    # 'https://en.brno.cz/')
+        # 'https://www.brno.cz/mestske-casti-prehled')
+        # 'https://en.brno.cz/')
+        'https://www.gotobrno.cz/en/explore-brno/go-to-brnos-holy-sites/')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())

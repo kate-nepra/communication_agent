@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from agent.agent import Agent
+from agents.agent import Agent
 import arrow
 from dotenv import load_dotenv
 from src.constants import DATE_FORMAT

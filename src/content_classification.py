@@ -1,7 +1,7 @@
 import openai
 from dotenv import load_dotenv
 
-from agent.agent import Agent
+from langchain import Agent
 
 from transformers import pipeline
 import os
