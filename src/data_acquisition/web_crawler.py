@@ -1,8 +1,8 @@
 import arrow
 
 from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT, CRAWL_ONLY, BANNED_SUBSTRS
-from src.web_scraper import WebScraper
-from bs4 import BeautifulSoup, Comment
+from src.data_acquisition.web_scraper import WebScraper
+from bs4 import BeautifulSoup
 import pandas as pd
 from urllib.parse import urlparse, urlunparse
 

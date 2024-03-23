@@ -18,7 +18,11 @@ TYPE = 'record_type'
 TYPE_ID = 'type_id'
 UPDATE_INTERVAL = 'update_interval'
 
-RECORD_TYPE_LABELS = ['place', 'event', 'administration', 'static']
+PLACE = 'place'
+EVENT = 'event'
+ADMINISTRATION = 'administration'
+STATIC = 'static'
+RECORD_TYPE_LABELS = [PLACE, EVENT, ADMINISTRATION, STATIC]
 
 BRNO_SUBSTRS = ['Brno', 'brno', 'BRNO', 'Brně', 'Brnu', 'Brnem']
 FORCED_TAGS = ['body', 'main', 'html']

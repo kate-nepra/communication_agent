@@ -3,12 +3,12 @@ import json
 import arrow
 import pandas as pd
 
-from src.content_classification import get_content_type_prompt
-from src.parser import get_parsed_content, BaseSchema
+from src.content_classification import get_content_type_by_function_call
+from src.parser import get_parsed_content_by_function_call, BaseSchema
 from src.sourcesdb import SourcesDB
-from src.web_crawler import WebCrawler
-from src.web_scraper import WebScraper
-from src.pdf_processing import PdfProcessor
+from src.data_acquisition.web_crawler import WebCrawler
+from src.data_acquisition.web_scraper import WebScraper
+from src.data_acquisition.pdf_processing import PdfProcessor
 from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, TYPE_ID, CRAWL_ONLY, DATE_SCRAPED
 
 
@@ -127,7 +127,7 @@ class DataAcquisitionManager:
         docs = PdfProcessor(urls).get_chunks_batch()
         for chunks, url in docs:
             for chunk in chunks:
-                content = get_parsed_content(url, chunk)
+                content = get_parsed_content_by_function_call(url, chunk)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
         self._sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
 
@@ -142,7 +142,7 @@ class DataAcquisitionManager:
             if self._is_banned(ws, url, []):
                 continue
             for t in ws.get_clean_texts():
-                content = get_parsed_content(url, t)
+                content = get_parsed_content_by_function_call(url, t)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
                 type_name = content.record_type
                 to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self._sources_db.get_type_id(type_name)
@@ -172,7 +172,7 @@ class DataAcquisitionManager:
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
-                content = get_parsed_content(url, chunk)
+                content = get_parsed_content_by_function_call(url, chunk)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
 
     def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
@@ -188,7 +188,7 @@ class DataAcquisitionManager:
         """
         results = []
         for t in ws.get_clean_texts():
-            content = get_parsed_content(new_url, t)
+            content = get_parsed_content_by_function_call(new_url, t)
             type_id = self._sources_db.get_type_id(content.record_type)
             self._sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content))
             results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
@@ -219,7 +219,7 @@ class DataAcquisitionManager:
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():
-                    type_id = int(self._sources_db.get_type_id(get_content_type_prompt(ws.html)))
+                    type_id = int(self._sources_db.get_type_id(get_content_type_by_function_call(ws.html)))
                     new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
                 else:
                     processed = self._process_non_crawl_only(new_url, ws)

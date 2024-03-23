@@ -1,7 +1,7 @@
-from src.parser import get_parsed_content
+from src.parser import get_parsed_content_by_function_call
 from src.sourcesdb import SourcesDB
 import weaviate
-from pdf_processing import PdfProcessor
+from src.data_acquisition.pdf_processing import PdfProcessor
 
 
 class VectorStorage:
@@ -40,7 +40,7 @@ class VectorStorage:
         file_name = pdf_path.split("/")[-1]
         processor = PdfProcessor([pdf_path])
         chunks = processor.get_chunks()
-        schemas = [get_parsed_content(file_name, content) for content in chunks]
+        schemas = [get_parsed_content_by_function_call(file_name, content) for content in chunks]
         collection = self.client.collections.get("BaseSchema")
 
         with collection.batch.dynamic() as batch:

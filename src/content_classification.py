@@ -1,13 +1,7 @@
-import openai
-from dotenv import load_dotenv
-
-from langchain import Agent
-
+from pydantic import BaseModel, Field
 from transformers import pipeline
-import os
-from src.constants import RECORD_TYPE_LABELS
-
-load_dotenv()
+from src.agents.api_agent import ApiAgent, Message
+from src.constants import RECORD_TYPE_LABELS, PLACE, EVENT, ADMINISTRATION, STATIC
 
 
 def get_content_type_simple(text: str, labels: list[str] = RECORD_TYPE_LABELS) -> str:
@@ -17,42 +11,50 @@ def get_content_type_simple(text: str, labels: list[str] = RECORD_TYPE_LABELS) -
     return result['labels'][0]
 
 
-def get_content_type_prompt(content: str) -> str:  # Todo add model choice
-    results = []
-
+def get_content_type_by_function_call(agent: ApiAgent, content: str) -> str:
     def assign_place() -> str:
         """ Call this function if you encounter entity that describes places, tours or destinations in or near Brno city, such as restaurant, café, bar, bakery, museum, greenery, church, castle, university, kino, theatre or similar."""
-        results.append("place")
-        return "The place was added successfully, you can continue with the further processing."
+        return PLACE
 
     def assign_event() -> str:
         """ Call this function if you encounter entity that describes events, such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar."""
-        results.append("event")
-        return "The event was added successfully, you can continue with the further processing."
+        return EVENT
 
     def assign_administration() -> str:
         """ Call this function if you encounter entity that contains administrative information such as Municipal office, business, authorities, insurance, social Care, vehicle registration, taxes, fees, information for expats, school system, residence, ID cards or similar."""
-        results.append("administration")
-        return "The administrative entity was added successfully, you can continue with the further processing."
+        return ADMINISTRATION
 
     def assign_static() -> str:
         """ Call this function if you encounter entity that contains various articles, blog posts, or an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative."""
-        results.append("static")
-        return "The static entity was added successfully, you can continue with the further processing."
+        return STATIC
 
-    agent = Agent(api_key=os.getenv('OPEN_AI_API_KEY'), model="gpt-3.5-turbo-1106")
-
-    agent.add_function(assign_place)
-    agent.add_function(assign_event)
-    agent.add_function(assign_administration)
-    agent.add_function(assign_static)
-
-    agent.do_conversation(
-        f""" You are a smart processor of web-scraped text. Follow these instructions:
-     1. Take the given text as a one whole entity
-     2. Classify the entity by calling one of the functions with fitting description to assign the type of the entity
-     3. Reply "TERMINATE" at the end of the message when the function is called.
+    messages = [Message(role="system",
+                        content=f""" You are a smart processor of web-scraped text. Follow these instructions:
+     1. Take the given text as a one whole entity.
+     2. Classify the entity by calling one of the functions with fitting description to assign the type of the entity.
      Here is the text to process
-     ```{content}```""")
+     ```{content}```""")]
 
-    return results[0]
+    return agent.get_function_call_response([assign_place, assign_event, assign_administration, assign_static],
+                                            messages)  # Todo catch errs
+
+
+def get_content_type_by_json_call(agent: ApiAgent, content: str) -> dict:
+    class ContentType(BaseModel):
+        """Content type of the entity can be one of: place, event, administration, static"""
+        type: str = Field(...,
+                          description="Content type of the entity - one of 'place', 'event', 'administration', 'static'")
+
+    messages = [Message(role="system",
+                        content=f""" You are a smart classifier of web-scraped text. Follow these instructions:
+     1. Take the given text as a one whole entity.
+     2. Classify the entity by returning the type name of the entity: one of 'place', 'event', 'administration', 'static':
+        place: entity that describes places, tours or destinations in or near Brno city, such as restaurant, café, bar, bakery, museum, greenery, church, castle, university, kino, theatre or similar.
+        event: entity that describes events, such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar.
+        administration: entity that contains administrative information such as Municipal office, business, authorities, insurance, social Care, vehicle registration, taxes, fees, information for expats, school system, residence, ID cards or similar.
+        static: entity that contains various articles, blog posts, or an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative.
+        
+     Here is the text to process
+     ```{content}```""")]
+
+    return agent.get_json_format_response(ContentType, messages)  # Todo catch errs
