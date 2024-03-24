@@ -29,13 +29,15 @@ def get_content_type_by_function_call(agent: ApiAgent, content: str) -> str:
         return STATIC
 
     messages = [Message(role="system",
-                        content=f""" You are a smart processor of web-scraped text. Follow these instructions:
+                        content=f"""You're a function picker based on given web-scraped text. Follow these instructions:
      1. Take the given text as a one whole entity.
-     2. Classify the entity by calling one of the functions with fitting description to assign the type of the entity.
+     2. Call one of the given functions, choose one with most fitting description. If the function accepts no parameters, return all (types and content and description and other) but the function name empty.
+     3. Stop when you find the fitting function, you must call only one function.
      Here is the text to process
      ```{content}```""")]
 
-    return agent.get_function_call_response([assign_place, assign_event, assign_administration, assign_static],
+    return agent.get_function_call_response(locals(),
+                                            [assign_place, assign_event, assign_administration, assign_static],
                                             messages)  # Todo catch errs
 
 
