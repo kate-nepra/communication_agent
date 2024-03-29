@@ -4,12 +4,10 @@ import arrow
 import pandas as pd
 
 from src.content_classification import get_content_type_by_function_call
-from src.parser import get_parsed_content_by_function_call, BaseSchema
 from src.sourcesdb import SourcesDB
 from src.data_acquisition.web_crawler import WebCrawler
 from src.data_acquisition.web_scraper import WebScraper
 from src.data_acquisition.pdf_processing import PdfProcessor
-from constants import URL, DATE_FORMAT, BRNO_SUBSTRS, TYPE_ID, CRAWL_ONLY, DATE_SCRAPED
 
 
 class DataAcquisitionManager:

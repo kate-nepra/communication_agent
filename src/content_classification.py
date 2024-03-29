@@ -55,7 +55,7 @@ def get_content_type_by_json_call(agent: ApiAgent, content: str) -> dict:
         event: entity that describes events, such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar.
         administration: entity that contains administrative information such as Municipal office, business, authorities, insurance, social Care, vehicle registration, taxes, fees, information for expats, school system, residence, ID cards or similar.
         static: entity that contains various articles, blog posts, or an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative.
-        
+     3. Return only JSON with the type of the entity and stop, do not provide any additional text.   
      Here is the text to process
      ```{content}```""")]
 
