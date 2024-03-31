@@ -1,12 +1,13 @@
 import inspect
 import json
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, asdict
 import instructor
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from json_repair import repair_json
+import logging
 
 
 @dataclass
@@ -48,6 +49,7 @@ class ApiAgent(ABC):
             functions=openai_functions,
             stream=False
         )
+        print(response)
         if response.choices[0].message.function_call is None:
             if max_retries > 0:
                 return self.get_function_call_response(module, functions, messages, max_retries - 1)
@@ -64,34 +66,54 @@ class ApiAgent(ABC):
         """
 
         function_name = response.choices[0].message.function_call.name
-        if not self._get_function_parameters(module, function_name):
+        self._check_function_existence(function_name, module)
+        params = self._get_function_parameters(module, function_name)
+        if not params:
             return module[function_name]()
         function_arguments = self._parse_function_arguments(response.choices[0].message.function_call.arguments)
-        # todo check if parameters are correct
+        print(function_arguments)
+        self._check_parameters(function_arguments, function_name, params)
         return module[function_name](**function_arguments)
 
-    @staticmethod
-    def _parse_function_arguments(function_arguments: dict) -> dict:
+    def _parse_function_arguments(self, function_arguments: dict) -> dict:
         """
         Parse the individual function arguments from the response
         :param function_arguments: Unparsed function arguments in JSON string format
         :return: dictionary containing the parsed function arguments
         """
 
-        if isinstance(function_arguments, dict):
+        try:
             function_arguments = dict(function_arguments)
-        else:
-            a = str(function_arguments)
+        except Exception as e:
+            logging.error("Error parsing function arguments: %s", e)
+            print("BEFORE")
+            print(function_arguments)
+            a = function_arguments.replace('\n', ' ')
             a = a.replace('\"https\"', 'https')
             a = a.replace('None', '""')
-            a = repair_json(a)
+            print(a)
+            b = repair_json(a, skip_json_loads=True)
+            print("Repaired JSON")
+            print(b)
             function_arguments = dict(json.loads(a))
+            print("loaded")
+            print(function_arguments)
         if "description" not in str(function_arguments):
-            return function_arguments
+            return self._fix_encoding(function_arguments)
         result = {}
         for key in function_arguments:
             result[key] = function_arguments[key].get("description", "")
-        return result
+        return self._fix_encoding(result)
+
+    @staticmethod
+    def _fix_encoding(arguments: dict) -> dict:
+        for k, v in arguments.items():
+            if isinstance(v, str):
+                if "\\" in v:
+                    arguments[k] = bytes(v.replace('\n', ' ').replace('\"', ''), 'utf-8').decode('unicode_escape')
+        print("Fixed encoding")
+        print(arguments)
+        return arguments
 
     @staticmethod
     def _get_function_parameters(module: dict, func_name):
@@ -143,6 +165,19 @@ class ApiAgent(ABC):
         )
         return dict(response)
 
+    @staticmethod
+    def _check_parameters(received_arguments: dict, function_name: str, function_params: dict):
+        if len(function_params) != len(received_arguments):
+            raise ValueError(f"Function {function_name} expects {function_params}")
+        for arg in received_arguments:
+            if arg not in function_params:
+                raise ValueError(f"Parameter {arg} not found in function {function_name}")
+
+    @staticmethod
+    def _check_function_existence(function_name, module):
+        if function_name not in module:
+            raise ValueError(f"Function {function_name} not found in the module")
+
 
 class LlamaApiAgent(ApiAgent):
 
@@ -191,7 +226,6 @@ class OllamaApiAgent(ApiAgent):
                                  f"one of the functions according to given instructions - {openai_functions}")
         messages = [config_message] + messages
         resp = self.get_json_format_response(FunctionCallOllama, messages)
-        print(resp)
         return self._parse_function_call(module, resp)
 
     def _parse_function_call(self, module: dict, response: dict):
@@ -203,7 +237,10 @@ class OllamaApiAgent(ApiAgent):
         """
 
         function_name = response["name"]
-        if not self._get_function_parameters(module, function_name):
+        self._check_function_existence(function_name, module)
+        params = self._get_function_parameters(module, function_name)
+        if not params:
             return module[function_name]()
         function_arguments = self._parse_function_arguments(response["arguments"])
+        self._check_parameters(function_arguments, function_name, params)
         return module[function_name](**function_arguments)
