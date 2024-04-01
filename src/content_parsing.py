@@ -60,7 +60,7 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
     dates = [{"start": "2024-01-11"}, {"start": "2024-01-14 15:00"}, {"start": "2024-01-31 15:00", "end": "2024-02-14"}]
     messages = [Message(role="system",
                         content=f""" You are a smart processor of web-scraped text. Follow these instructions:
-      1. Go through the text and extract information from the article, translate to English if not in English. Use UTF-8 escape characters for special characters encoding.
+      1. Go through the text and extract information from the article, translate to English if not in English. Use plain text.
       2. Use the function with the most fitting description, pass parameters as described:
         Use provided or generate a header more fitting the found text.
         If you encounter a descriptive text of the entity, for example a plot of a theatrical performance for an event or a menu of a restaurant for a place, assign it as the text.
@@ -73,4 +73,4 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
     Here is the text to process ```{content}```""")]
 
     return agent.get_function_call_response(locals(), [add_place, add_administration, add_static, add_event],
-                                            messages)  # Todo catch errs
+                                            messages)

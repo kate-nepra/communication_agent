@@ -53,11 +53,47 @@ class ApiAgent(ABC):
         if response.choices[0].message.function_call is None:
             if max_retries > 0:
                 return self.get_function_call_response(module, functions, messages, max_retries - 1)
-            raise ValueError("Function call not found in the response")
+            logging.error("No function call found in the response, max retries reached. Skipping.")
 
-        return self._parse_function_call(module, response)
+        return self._handle_function_call_return(functions, max_retries, messages, module, response)
 
-    def _parse_function_call(self, module: dict, response):
+    def _handle_function_call_return(self, functions, max_retries, messages, module, response):
+        """
+        Handle the return of the function call
+        :param functions: Functions that were chosen from
+        :param max_retries: Number of retries
+        :param messages: List of messages
+        :param module: Module containing the functions
+        :param response: Model response in API format
+        :return:
+        """
+        name, arguments = self._parse_function_call(module, response)
+        if not name:
+            return self._handle_function_call_return_errors(functions, max_retries, messages, module)
+        try:
+            if arguments:
+                return module[name](**arguments)
+            return module[name]()
+        except Exception as e:
+            logging.error(f"Error calling function {name}: {e}")
+            return self._handle_function_call_return_errors(functions, max_retries, messages, module)
+
+    def _handle_function_call_return_errors(self, functions, max_retries, messages, module):
+        """
+        Handle the errors in the function call return
+        :param functions: Functions that were chosen from
+        :param max_retries: Number of retries
+        :param messages: List of messages
+        :param module: Module containing the functions
+        :return:
+        """
+        if max_retries > 0:
+            logging.info("Could not make function call, retrying.")
+            return self.get_function_call_response(module, functions, messages, max_retries - 1)
+        logging.error("Could not make function call, max retries reached. Skipping.")
+        return None
+
+    def _parse_function_call(self, module: dict, response) -> [str, dict]:
         """
         Parse the response from the model to get the function call
         :param module: Module containing the function
@@ -66,14 +102,16 @@ class ApiAgent(ABC):
         """
 
         function_name = response.choices[0].message.function_call.name
-        self._check_function_existence(function_name, module)
+        if not self._does_function_exist(function_name, module):
+            return None, None
         params = self._get_function_parameters(module, function_name)
         if not params:
-            return module[function_name]()
+            return function_name, None
         function_arguments = self._parse_function_arguments(response.choices[0].message.function_call.arguments)
         print(function_arguments)
-        self._check_parameters(function_arguments, function_name, params)
-        return module[function_name](**function_arguments)
+        if self._do_parameters_match(function_arguments, function_name, params):
+            return function_name, function_arguments
+        return None, None
 
     def _parse_function_arguments(self, function_arguments: dict) -> dict:
         """
@@ -85,19 +123,12 @@ class ApiAgent(ABC):
         try:
             function_arguments = dict(function_arguments)
         except Exception as e:
-            logging.error("Error parsing function arguments: %s", e)
-            print("BEFORE")
-            print(function_arguments)
+            logging.error("Error parsing function arguments to dictionary: %s. Trying to handle.", e)
             a = function_arguments.replace('\n', ' ')
             a = a.replace('\"https\"', 'https')
             a = a.replace('None', '""')
-            print(a)
-            b = repair_json(a, skip_json_loads=True)
-            print("Repaired JSON")
-            print(b)
+            a = repair_json(a)
             function_arguments = dict(json.loads(a))
-            print("loaded")
-            print(function_arguments)
         if "description" not in str(function_arguments):
             return self._fix_encoding(function_arguments)
         result = {}
@@ -110,13 +141,18 @@ class ApiAgent(ABC):
         for k, v in arguments.items():
             if isinstance(v, str):
                 if "\\" in v:
-                    arguments[k] = bytes(v.replace('\n', ' ').replace('\"', ''), 'utf-8').decode('unicode_escape')
+                    v = v.replace('\n', ' ').replace('\"', '')
+                    try:
+                        arguments[k] = bytes(v, 'utf-8').decode('unicode_escape')
+                    except UnicodeDecodeError as e:
+                        logging.error(f"Error decoding string: {e}")
+                        arguments[k] = v
         print("Fixed encoding")
         print(arguments)
         return arguments
 
     @staticmethod
-    def _get_function_parameters(module: dict, func_name):
+    def _get_function_parameters(module: dict, func_name) -> list:
         """
         Get the parameters of the function
         :param module: Module containing the function
@@ -129,7 +165,8 @@ class ApiAgent(ABC):
             parameter_names = list(signature.parameters.keys())
             return parameter_names
         else:
-            raise ValueError(f"Function {func_name} not found in the module")
+            logging.error(f"Function {func_name} not found in the module.")
+            return []
 
     @staticmethod
     def _transfer_function_to_openai_function_schema(function) -> dict:
@@ -166,17 +203,22 @@ class ApiAgent(ABC):
         return dict(response)
 
     @staticmethod
-    def _check_parameters(received_arguments: dict, function_name: str, function_params: dict):
+    def _do_parameters_match(received_arguments: dict, function_name: str, function_params: list) -> bool:
         if len(function_params) != len(received_arguments):
-            raise ValueError(f"Function {function_name} expects {function_params}")
+            logging.error(f"Function {function_name} expects {function_params}")
+            return False
         for arg in received_arguments:
             if arg not in function_params:
-                raise ValueError(f"Parameter {arg} not found in function {function_name}")
+                logging.error(f"Parameter {arg} not found in function {function_name}")
+                return False
+        return True
 
     @staticmethod
-    def _check_function_existence(function_name, module):
+    def _does_function_exist(function_name: str, module: dict) -> bool:
         if function_name not in module:
-            raise ValueError(f"Function {function_name} not found in the module")
+            logging.error(f"Function {function_name} not found in the module")
+            return False
+        return True
 
 
 class LlamaApiAgent(ApiAgent):
@@ -212,7 +254,7 @@ class OllamaApiAgent(ApiAgent):
         :param module: Module containing the functions
         :param functions: List of functions to chosen from
         :param messages: List of messages to be sent to the model
-        :param max_retries:
+        :param max_retries: Number of retries
         :return: result of called function
         """
 
@@ -225,10 +267,18 @@ class OllamaApiAgent(ApiAgent):
                                  f"You are a helpful assistant with access to the following functions, your task is to choose "
                                  f"one of the functions according to given instructions - {openai_functions}")
         messages = [config_message] + messages
-        resp = self.get_json_format_response(FunctionCallOllama, messages)
-        return self._parse_function_call(module, resp)
+        try:
+            response = self.get_json_format_response(FunctionCallOllama, messages)
+        except Exception as e:
+            if max_retries > 0:
+                logging.error(f"Error getting function call response: {e}. Retrying")
+                return self.get_function_call_response(module, functions, messages, max_retries - 1)
+            logging.error(f"Error getting function call response: {e}. Max retries reached. Skipping.")
+            return None
 
-    def _parse_function_call(self, module: dict, response: dict):
+        return self._handle_function_call_return(functions, max_retries, messages, module, response)
+
+    def _parse_function_call(self, module: dict, response: dict) -> [str, dict]:
         """
         Parse the response from the model to get the function call
         :param module: Module containing the function
@@ -237,10 +287,12 @@ class OllamaApiAgent(ApiAgent):
         """
 
         function_name = response["name"]
-        self._check_function_existence(function_name, module)
+        if not self._does_function_exist(function_name, module):
+            return None, None
         params = self._get_function_parameters(module, function_name)
         if not params:
-            return module[function_name]()
+            return function_name, None
         function_arguments = self._parse_function_arguments(response["arguments"])
-        self._check_parameters(function_arguments, function_name, params)
-        return module[function_name](**function_arguments)
+        if self._do_parameters_match(function_arguments, function_name, params):
+            return function_name, function_arguments
+        return None, None
