@@ -1,7 +1,7 @@
 from src.parser import get_parsed_content_by_function_call
-from src.sourcesdb import SourcesDB
+from src.data_acquisition.sources_store.sourcesdb import SourcesDB
 import weaviate
-from src.data_acquisition.pdf_processing import PdfProcessor
+from src.data_acquisition.data_retrieval.pdf_processing import PdfProcessor
 
 
 class VectorStorage:

@@ -1,10 +1,19 @@
+import ast
+from configparser import ConfigParser
+
 import arrow
 
-from src.constants import DATE_FORMAT, DATE_ADDED, URL, PARENT, CRAWL_ONLY, BANNED_SUBSTRS
-from src.data_acquisition.web_scraper import WebScraper
+from src.constants import DATE_FORMAT, CONSTANTS_CONFIG_PATH
+from src.data_acquisition.constants import URL, DATE_ADDED, PARENT, CRAWL_ONLY
+from src.data_acquisition.data_retrieval.web_scraper import WebScraper
 from bs4 import BeautifulSoup
 import pandas as pd
 from urllib.parse import urlparse, urlunparse
+
+_config = ConfigParser()
+_config.read(CONSTANTS_CONFIG_PATH)
+_config_content_retrieval = _config['CONTENT_RETRIEVAL']
+BANNED_SUBSTRINGS = ast.literal_eval(_config_content_retrieval["BANNED_SUBSTRINGS"])
 
 
 class WebCrawler:
@@ -24,7 +33,7 @@ class WebCrawler:
         urls.extend(self._get_main_urls(html))
         if not urls:
             return pd.DataFrame()
-        for ban in BANNED_SUBSTRS:
+        for ban in BANNED_SUBSTRINGS:
             urls = self._del_subset(ban, urls)
         return self._get_cleaned_df(urls).drop_duplicates()
 

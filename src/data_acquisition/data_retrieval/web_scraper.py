@@ -6,7 +6,8 @@ from fake_useragent import UserAgent
 import requests
 import copy
 
-from src.constants import BRNO_SUBSTRS, FORCED_TAGS, MAX_SIZE
+from src.constants import MAX_SIZE
+from src.data_acquisition.constants import FORCED_TAGS
 
 logger = logging.getLogger(__name__)
 

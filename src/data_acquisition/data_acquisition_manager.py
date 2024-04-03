@@ -1,13 +1,26 @@
+import ast
 import json
+import os
+from configparser import ConfigParser
 
 import arrow
 import pandas as pd
+from dotenv import load_dotenv
 
-from src.content_classification import get_content_type_by_function_call
-from src.sourcesdb import SourcesDB
-from src.data_acquisition.web_crawler import WebCrawler
-from src.data_acquisition.web_scraper import WebScraper
-from src.data_acquisition.pdf_processing import PdfProcessor
+from src.agents.api_agent import ApiAgent, LlamaApiAgent
+from src.constants import DATE_FORMAT, CONSTANTS_CONFIG_PATH
+from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY
+from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
+from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
+from src.data_acquisition.sources_store.sourcesdb import SourcesDB
+from src.data_acquisition.data_retrieval.web_crawler import WebCrawler
+from src.data_acquisition.data_retrieval.web_scraper import WebScraper
+from src.data_acquisition.data_retrieval.pdf_processing import PdfProcessor
+
+_config = ConfigParser()
+_config.read(CONSTANTS_CONFIG_PATH)
+_config_content_retrieval = _config['CONTENT_RETRIEVAL']
+CONTENT_SUBSTRINGS = ast.literal_eval(_config_content_retrieval["CONTENT_SUBSTRINGS"])
 
 
 class DataAcquisitionManager:
@@ -22,8 +35,9 @@ class DataAcquisitionManager:
     - storing the parsed data in the vector database
     """
 
-    def __init__(self, sources_db: SourcesDB):
+    def __init__(self, sources_db: SourcesDB, agent: ApiAgent):
         self._sources_db = sources_db
+        self._agent = agent
 
     def _crawl_url(self, url: str, parents: list) -> pd.DataFrame:
         """
@@ -101,7 +115,7 @@ class DataAcquisitionManager:
         """
         This method checks if the given url is banned based on the content of the web page.
         """
-        if not ws.does_html_contain_substrs(BRNO_SUBSTRS):
+        if not ws.does_html_contain_substrs(CONTENT_SUBSTRINGS):
             self._sources_db.add_or_update_banned_source(new_url, arrow.now().format(DATE_FORMAT))
             banned.append(new_url)
             return True
@@ -125,7 +139,7 @@ class DataAcquisitionManager:
         docs = PdfProcessor(urls).get_chunks_batch()
         for chunks, url in docs:
             for chunk in chunks:
-                content = get_parsed_content_by_function_call(url, chunk)
+                content = get_parsed_content_by_function_call(self._agent, url, chunk)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
         self._sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
 
@@ -140,7 +154,7 @@ class DataAcquisitionManager:
             if self._is_banned(ws, url, []):
                 continue
             for t in ws.get_clean_texts():
-                content = get_parsed_content_by_function_call(url, t)
+                content = get_parsed_content_by_function_call(self._agent, url, t)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
                 type_name = content.record_type
                 to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self._sources_db.get_type_id(type_name)
@@ -170,7 +184,7 @@ class DataAcquisitionManager:
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
-                content = get_parsed_content_by_function_call(url, chunk)
+                content = get_parsed_content_by_function_call(self._agent, url, chunk)
                 self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
 
     def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
@@ -186,7 +200,7 @@ class DataAcquisitionManager:
         """
         results = []
         for t in ws.get_clean_texts():
-            content = get_parsed_content_by_function_call(new_url, t)
+            content = get_parsed_content_by_function_call(self._agent, new_url, t)
             type_id = self._sources_db.get_type_id(content.record_type)
             self._sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content))
             results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
@@ -217,7 +231,7 @@ class DataAcquisitionManager:
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():
-                    type_id = int(self._sources_db.get_type_id(get_content_type_by_function_call(ws.html)))
+                    type_id = int(self._sources_db.get_type_id(get_content_type_by_function_call(self._agent, ws.html)))
                     new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
                 else:
                     processed = self._process_non_crawl_only(new_url, ws)
@@ -239,7 +253,9 @@ class DataAcquisitionManager:
 
 
 if __name__ == '__main__':
+    load_dotenv()
     sources = SourcesDB()
-    dam = DataAcquisitionManager(sources)
+    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
+    dam = DataAcquisitionManager(sources, llama_agent)
     dam.initial_data_acquisition(3)
     # dam.update_by_type_name('event')

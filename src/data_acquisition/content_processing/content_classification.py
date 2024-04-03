@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from transformers import pipeline
 from src.agents.api_agent import ApiAgent, Message
-from src.constants import RECORD_TYPE_LABELS, PLACE, EVENT, ADMINISTRATION, STATIC
+from src.data_acquisition.constants import RECORD_TYPE_LABELS, PLACE, EVENT, ADMINISTRATION, STATIC
 
 
 def get_content_type_simple(text: str, labels: list[str] = RECORD_TYPE_LABELS) -> str:
@@ -59,4 +59,4 @@ def get_content_type_by_json_call(agent: ApiAgent, content: str) -> dict:
      Here is the text to process
      ```{content}```""")]
 
-    return agent.get_json_format_response(ContentType, messages)  # Todo catch errs
+    return agent.get_json_format_response(ContentType, messages)  # Todo check output

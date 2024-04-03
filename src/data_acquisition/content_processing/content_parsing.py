@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from src.agents.api_agent import ApiAgent, Message
 from src.constants import DATE_FORMAT
+from src.data_acquisition.constants import STATIC, PLACE, EVENT, ADMINISTRATION
 
 load_dotenv()
 
@@ -42,20 +43,20 @@ class EventSchema(BaseSchema):
 def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
     def add_place(header: str, text: str, brief: str, url: str, address: str) -> BaseSchema:
         """ Call this function if you encounter entity that is a place or destination in or near Brno city, such as restaurant, café, bar, bakery, museum, tour, greenery, church, castle, university, kino, theatre or similar."""
-        return ExtendedSchema(header, "place", brief, text, url, arrow.now().format(DATE_FORMAT), address)
+        return ExtendedSchema(header, PLACE, brief, text, url, arrow.now().format(DATE_FORMAT), address)
 
     def add_event(header: str, text: str, brief: str, address: str, url: str, dates: [str]) -> BaseSchema:
         """ Call this function if you encounter entity that is an event such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar."""
         # Todo check if dates are in correct format
-        return EventSchema(header, "event", brief, text, url, arrow.now().format(DATE_FORMAT), address, dates)
+        return EventSchema(header, EVENT, brief, text, url, arrow.now().format(DATE_FORMAT), address, dates)
 
     def add_administration(header: str, text: str, brief: str, url: str, address: str) -> BaseSchema:
         """ Call this function if you encounter entity that is administrative information such as Municipal office, business, authorities, insurance, social Care, vehicle registration, taxes, fees, information for expats, school system, residence, ID cards or similar."""
-        return ExtendedSchema(header, "administration", brief, text, url, arrow.now().format(DATE_FORMAT), address)
+        return ExtendedSchema(header, ADMINISTRATION, brief, text, url, arrow.now().format(DATE_FORMAT), address)
 
     def add_static(header: str, text: str, brief: str, url: str) -> BaseSchema:
         """ Call this function if you encounter entity that contains blog post, an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative."""
-        return BaseSchema(header, "static", brief, text, url, arrow.now().format(DATE_FORMAT))
+        return BaseSchema(header, STATIC, brief, text, url, arrow.now().format(DATE_FORMAT))
 
     dates = [{"start": "2024-01-11"}, {"start": "2024-01-14 15:00"}, {"start": "2024-01-31 15:00", "end": "2024-02-14"}]
     messages = [Message(role="system",
