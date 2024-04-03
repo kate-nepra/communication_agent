@@ -1,26 +1,18 @@
-import ast
 import json
 import os
-from configparser import ConfigParser
-
 import arrow
 import pandas as pd
 from dotenv import load_dotenv
 
 from src.agents.api_agent import ApiAgent, LlamaApiAgent
-from src.constants import DATE_FORMAT, CONSTANTS_CONFIG_PATH
-from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY
+from src.constants import DATE_FORMAT
+from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY, CONTENT_SUBSTRINGS
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
 from src.data_acquisition.data_retrieval.web_crawler import WebCrawler
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
 from src.data_acquisition.data_retrieval.pdf_processing import PdfProcessor
-
-_config = ConfigParser()
-_config.read(CONSTANTS_CONFIG_PATH)
-_config_content_retrieval = _config['CONTENT_RETRIEVAL']
-CONTENT_SUBSTRINGS = ast.literal_eval(_config_content_retrieval["CONTENT_SUBSTRINGS"])
 
 
 class DataAcquisitionManager:
@@ -36,8 +28,8 @@ class DataAcquisitionManager:
     """
 
     def __init__(self, sources_db: SourcesDB, agent: ApiAgent):
-        self._sources_db = sources_db
-        self._agent = agent
+        self.sources_db = sources_db
+        self.agent = agent
 
     def _crawl_url(self, url: str, parents: list) -> pd.DataFrame:
         """
@@ -50,12 +42,12 @@ class DataAcquisitionManager:
         extend_df = wc.get_extend_df()
         if extend_df.empty:
             return extend_df
-        existing_urls = self._sources_db.get_existing_urls_from_list(extend_df[URL].values)
+        existing_urls = self.sources_db.get_existing_urls_from_list(extend_df[URL].values)
         extend_df = extend_df[extend_df[URL].apply(lambda x: len(x) <= 255)]
         if existing_urls:
             self._update_existing_urls(existing_urls)
         extend_df = extend_df[~extend_df[URL].isin(existing_urls)]
-        extend_df = self._remove_banned(self._sources_db.get_banned_urls(), extend_df)
+        extend_df = self._remove_banned(self.sources_db.get_banned_urls(), extend_df)
         extend_df[DATE_SCRAPED] = None
         extend_df[TYPE_ID] = None
         return extend_df
@@ -78,9 +70,9 @@ class DataAcquisitionManager:
         acquired = pd.DataFrame()
         for url in urls:
             new_df = self._get_new_urls_from_url(url)
-            self._sources_db.insert_or_update_sources(new_df)
+            self.sources_db.insert_or_update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
+        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id('pdf'))]
         return acquired
 
     def _update_urls(self, urls: list) -> pd.DataFrame:
@@ -92,9 +84,9 @@ class DataAcquisitionManager:
         acquired = pd.DataFrame()
         for url in urls:
             new_df = self._get_new_urls_from_url(url)
-            self._sources_db.update_sources(new_df)
+            self.sources_db.update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[acquired[TYPE_ID] != int(self._sources_db.get_type_id('pdf'))]
+        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id('pdf'))]
         return acquired
 
     def initial_data_acquisition(self, iterations: int) -> None:
@@ -103,11 +95,11 @@ class DataAcquisitionManager:
         crawl_only data and passes the crawl_only data to the web crawler and the web scraper.
         """
 
-        urls_df = self._sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
+        urls_df = self.sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
         if urls_df.empty:
             return
         to_scrape = pd.concat(
-            [urls_df[urls_df[CRAWL_ONLY] == 0], self._sources_db.get_all_static_sources_as_dataframe()])
+            [urls_df[urls_df[CRAWL_ONLY] == 0], self.sources_db.get_all_static_sources_as_dataframe()])
         self._scrape_and_update_sources(to_scrape)
         self.acquire_data(urls_df, iterations)
 
@@ -116,7 +108,7 @@ class DataAcquisitionManager:
         This method checks if the given url is banned based on the content of the web page.
         """
         if not ws.does_html_contain_substrs(CONTENT_SUBSTRINGS):
-            self._sources_db.add_or_update_banned_source(new_url, arrow.now().format(DATE_FORMAT))
+            self.sources_db.add_or_update_banned_source(new_url, arrow.now().format(DATE_FORMAT))
             banned.append(new_url)
             return True
         return False
@@ -125,23 +117,23 @@ class DataAcquisitionManager:
         """
         This method updates the existing urls in the sources' database. It sets the date_added to current date.
         """
-        self._sources_db.update_existing_urls_date(existing_urls, arrow.now().format(DATE_FORMAT))
+        self.sources_db.update_existing_urls_date(existing_urls, arrow.now().format(DATE_FORMAT))
 
     def update_by_type_name(self, type_name: str) -> None:
         if type_name == 'pdf':
             self._update_pdfs()
             return
-        data_df = self._sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
+        data_df = self.sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
         self._scrape_and_update_sources(data_df)
 
     def _update_pdfs(self) -> None:
-        urls = self._sources_db.get_all_pdf_urls()
+        urls = self.sources_db.get_all_pdf_urls()
         docs = PdfProcessor(urls).get_chunks_batch()
         for chunks, url in docs:
             for chunk in chunks:
-                content = get_parsed_content_by_function_call(self._agent, url, chunk)
-                self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
-        self._sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
+                content = get_parsed_content_by_function_call(self.agent, url, chunk)
+                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+        self.sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
 
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
         """
@@ -154,12 +146,12 @@ class DataAcquisitionManager:
             if self._is_banned(ws, url, []):
                 continue
             for t in ws.get_clean_texts():
-                content = get_parsed_content_by_function_call(self._agent, url, t)
-                self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+                content = get_parsed_content_by_function_call(self.agent, url, t)
+                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
                 type_name = content.record_type
-                to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self._sources_db.get_type_id(type_name)
+                to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self.sources_db.get_type_id(type_name)
                 to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
-        self._sources_db.insert_or_update_sources(to_scrape)
+        self.sources_db.insert_or_update_sources(to_scrape)
 
     @staticmethod
     def _remove_banned(banned: list, extend_df: pd.DataFrame) -> pd.DataFrame:
@@ -179,13 +171,13 @@ class DataAcquisitionManager:
         """ This method handles the pdf urls. It adds the pdf url to the sources' database. Only pdfs from
         gotobrno are allowed."""
         if 'gotobrno' in url:
-            self._sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
-                                                  None, parent_url, int(self._sources_db.get_type_id('pdf')))
+            self.sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
+                                                 None, parent_url, int(self.sources_db.get_type_id('pdf')))
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
-                content = get_parsed_content_by_function_call(self._agent, url, chunk)
-                self._sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+                content = get_parsed_content_by_function_call(self.agent, url, chunk)
+                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
 
     def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
         """
@@ -200,9 +192,9 @@ class DataAcquisitionManager:
         """
         results = []
         for t in ws.get_clean_texts():
-            content = get_parsed_content_by_function_call(self._agent, new_url, t)
-            type_id = self._sources_db.get_type_id(content.record_type)
-            self._sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content))
+            content = get_parsed_content_by_function_call(self.agent, new_url, t)
+            type_id = self.sources_db.get_type_id(content.record_type)
+            self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content))
             results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
         return results
 
@@ -213,7 +205,7 @@ class DataAcquisitionManager:
         :param url: Url to be crawled
         :return: DataFrame with the new urls
         """
-        new_urls = self._crawl_url(url, self._sources_db.get_all_parents())
+        new_urls = self._crawl_url(url, self.sources_db.get_all_parents())
         if new_urls.empty:
             return new_urls
 
@@ -231,7 +223,7 @@ class DataAcquisitionManager:
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():
-                    type_id = int(self._sources_db.get_type_id(get_content_type_by_function_call(self._agent, ws.html)))
+                    type_id = int(self.sources_db.get_type_id(get_content_type_by_function_call(self.agent, ws.html)))
                     new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
                 else:
                     processed = self._process_non_crawl_only(new_url, ws)

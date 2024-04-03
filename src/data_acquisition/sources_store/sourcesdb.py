@@ -1,27 +1,16 @@
 import logging
-from configparser import ConfigParser
-
 import mysql
 import pandas as pd
 from mysqlx import Error
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
-from src.constants import CONSTANTS_CONFIG_PATH
 from src.data_acquisition.constants import TYPE_ID, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_SCRAPED
+from src.data_acquisition.sources_store.constants import CONTENT_TYPES_CSV, RECORD_TYPES_CSV, SOURCES_CSV, \
+    BANNED_SOURCES_CSV, PARSED_SOURCES_CSV
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
-
-_config = ConfigParser()
-_config.read(CONSTANTS_CONFIG_PATH)
-_config_csv_paths = _config['CSV_PATHS']
-
-RECORD_TYPES_CSV = _config_csv_paths['RECORD_TYPES_CSV']
-CONTENT_TYPES_CSV = _config_csv_paths['CONTENT_TYPES_CSV']
-SOURCES_CSV = _config_csv_paths['SOURCES_CSV']
-BANNED_SOURCES_CSV = _config_csv_paths['BANNED_SOURCES_CSV']
-PARSED_SOURCES_CSV = _config_csv_paths['PARSED_SOURCES_CSV']
 
 
 class RecordTypes(Base):

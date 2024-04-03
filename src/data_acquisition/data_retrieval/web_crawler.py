@@ -1,19 +1,12 @@
-import ast
-from configparser import ConfigParser
-
 import arrow
 
-from src.constants import DATE_FORMAT, CONSTANTS_CONFIG_PATH
+from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import URL, DATE_ADDED, PARENT, CRAWL_ONLY
+from src.data_acquisition.data_retrieval.constants import BANNED_SUBSTRINGS
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
 from bs4 import BeautifulSoup
 import pandas as pd
 from urllib.parse import urlparse, urlunparse
-
-_config = ConfigParser()
-_config.read(CONSTANTS_CONFIG_PATH)
-_config_content_retrieval = _config['CONTENT_RETRIEVAL']
-BANNED_SUBSTRINGS = ast.literal_eval(_config_content_retrieval["BANNED_SUBSTRINGS"])
 
 
 class WebCrawler:

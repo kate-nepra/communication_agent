@@ -1,4 +1,11 @@
-CONTENT_SUBSTRINGS = ['Brno', 'brno', 'BRNO', 'Brně', 'Brnu', 'Brnem']
+import ast
+from configparser import ConfigParser
+
+from src.constants import CONSTANTS_CONFIG_PATH
+
+_config = ConfigParser()
+_config.read(CONSTANTS_CONFIG_PATH)
+CONTENT_SUBSTRINGS = ast.literal_eval(_config['CONTENT_RETRIEVAL']["CONTENT_SUBSTRINGS"])
 
 FORCED_TAGS = ['body', 'main', 'html']
 

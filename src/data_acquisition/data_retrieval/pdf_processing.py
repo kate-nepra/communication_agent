@@ -1,17 +1,14 @@
 import asyncio
-from configparser import ConfigParser
 
 import requests
 from llama_index_client import Document
-from src.constants import MAX_SIZE, CONSTANTS_CONFIG_PATH
+from src.constants import MAX_SIZE
 from llama_parse import LlamaParse
 from dotenv import load_dotenv
 
-load_dotenv()
+from src.data_acquisition.data_retrieval.constants import PDF_FOLDER
 
-_config = ConfigParser()
-_config.read(CONSTANTS_CONFIG_PATH)
-PDF_FOLDER = _config['PDF_FOLDER']['PDF_FOLDER']
+load_dotenv()
 
 
 def batch_scrape_pdfs(urls: list[str]):
