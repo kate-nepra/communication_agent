@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from src.agents.api_agent import ApiAgent, LlamaApiAgent
 from src.constants import DATE_FORMAT
-from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY, CONTENT_SUBSTRINGS
+from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
@@ -72,7 +72,7 @@ class DataAcquisitionManager:
             new_df = self._get_new_urls_from_url(url)
             self.sources_db.insert_or_update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id('pdf'))]
+        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id(PDF))]
         return acquired
 
     def _update_urls(self, urls: list) -> pd.DataFrame:
@@ -86,7 +86,7 @@ class DataAcquisitionManager:
             new_df = self._get_new_urls_from_url(url)
             self.sources_db.update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id('pdf'))]
+        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id(PDF))]
         return acquired
 
     def initial_data_acquisition(self, iterations: int) -> None:
@@ -120,7 +120,7 @@ class DataAcquisitionManager:
         self.sources_db.update_existing_urls_date(existing_urls, arrow.now().format(DATE_FORMAT))
 
     def update_by_type_name(self, type_name: str) -> None:
-        if type_name == 'pdf':
+        if type_name == PDF:
             self._update_pdfs()
             return
         data_df = self.sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
@@ -132,7 +132,7 @@ class DataAcquisitionManager:
         for chunks, url in docs:
             for chunk in chunks:
                 content = get_parsed_content_by_function_call(self.agent, url, chunk)
-                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
         self.sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
 
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
@@ -147,7 +147,7 @@ class DataAcquisitionManager:
                 continue
             for t in ws.get_clean_texts():
                 content = get_parsed_content_by_function_call(self.agent, url, t)
-                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
                 type_name = content.record_type
                 to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self.sources_db.get_type_id(type_name)
                 to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
@@ -172,12 +172,12 @@ class DataAcquisitionManager:
         gotobrno are allowed."""
         if 'gotobrno' in url:
             self.sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
-                                                 None, parent_url, int(self.sources_db.get_type_id('pdf')))
+                                                 None, parent_url, int(self.sources_db.get_type_id(PDF)))
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
                 content = get_parsed_content_by_function_call(self.agent, url, chunk)
-                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content))
+                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
 
     def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
         """
@@ -194,7 +194,7 @@ class DataAcquisitionManager:
         for t in ws.get_clean_texts():
             content = get_parsed_content_by_function_call(self.agent, new_url, t)
             type_id = self.sources_db.get_type_id(content.record_type)
-            self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content))
+            self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content), content.record_type)
             results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
         return results
 
@@ -241,7 +241,7 @@ class DataAcquisitionManager:
         :param content: Content to be converted
         :return: Content as a dictionary
         """
-        return json.dumps(content.__dict__)
+        return json.dumps(content.__dict__, ensure_ascii=False)
 
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ from src.constants import CONSTANTS_CONFIG_PATH
 _config = ConfigParser()
 _config.read(CONSTANTS_CONFIG_PATH)
 _config_csv_paths = _config['CSV_PATHS']
+_config_db_credentials = _config['CSV_PATHS']
 
 RECORD_TYPES_CSV = _config_csv_paths['RECORD_TYPES_CSV']
 CONTENT_TYPES_CSV = _config_csv_paths['CONTENT_TYPES_CSV']

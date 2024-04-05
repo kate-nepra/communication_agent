@@ -9,14 +9,13 @@ from pydantic import BaseModel, Field
 from json_repair import repair_json
 import logging
 
+from src.data_acquisition.constants import SYSTEM
+
 
 @dataclass
 class Message:
     role: str
     content: str
-
-
-SYSTEM = "system"
 
 
 class ApiAgent(ABC):
@@ -67,10 +66,11 @@ class ApiAgent(ABC):
         :param response: Model response in API format
         :return:
         """
-        name, arguments = self._parse_function_call(module, response)
-        if not name:
-            return self._handle_function_call_return_errors(functions, max_retries, messages, module)
+        name = None
         try:
+            name, arguments = self._parse_function_call(module, response)
+            if not name:
+                return self._handle_function_call_return_errors(functions, max_retries, messages, module)
             if arguments:
                 return module[name](**arguments)
             return module[name]()
@@ -123,7 +123,7 @@ class ApiAgent(ABC):
         try:
             function_arguments = dict(function_arguments)
         except Exception as e:
-            logging.error("Error parsing function arguments to dictionary: %s. Trying to handle.", e)
+            logging.error("Error parsing function arguments to dictionary: %s. Handling.", e)
             a = function_arguments.replace('\n', ' ')
             a = a.replace('\"https\"', 'https')
             a = a.replace('None', '""')

@@ -3,15 +3,15 @@ BASE_SCHEMA = {
     "properties": [
         {
             "name": "header",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "record_type",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "brief",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "text",
@@ -19,7 +19,7 @@ BASE_SCHEMA = {
         },
         {
             "name": "url",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "date_fetched",
@@ -27,7 +27,7 @@ BASE_SCHEMA = {
         },
         {
             "name": "metadata",
-            "dataType": "dictionary"
+            "dataType": "object"
         }
     ]
 }
@@ -37,15 +37,15 @@ EVENT_SCHEMA = {
     "properties": [
         {
             "name": "header",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "record_type",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "brief",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "text",
@@ -53,19 +53,19 @@ EVENT_SCHEMA = {
         },
         {
             "name": "url",
-            "dataType": "string"
+            "dataType": "text"
         },
         {
             "name": "date_fetched",
             "dataType": "date"
         },
         {
-            "name": "address",
-            "dataType": "string"
+            "name": "metadata",
+            "dataType": "object"
         },
         {
             "name": "dates",
-            "dataType": ["string"]
+            "dataType": ["text"]
         }
     ]
 }

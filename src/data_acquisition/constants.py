@@ -13,7 +13,8 @@ PLACE = 'place'
 EVENT = 'event'
 ADMINISTRATION = 'administration'
 STATIC = 'static'
-RECORD_TYPE_LABELS = [PLACE, EVENT, ADMINISTRATION, STATIC]
+PDF = 'pdf'
+RECORD_TYPE_LABELS = [PLACE, EVENT, ADMINISTRATION, STATIC, PDF]
 
 ROOT = 'root'
 ID = 'id'
@@ -26,3 +27,6 @@ PARENT = 'parent'
 TYPE = 'record_type'
 TYPE_ID = 'type_id'
 UPDATE_INTERVAL = 'update_interval'
+
+SYSTEM = "system"
+USER = "user"

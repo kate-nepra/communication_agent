@@ -8,6 +8,7 @@ import copy
 
 from src.constants import MAX_SIZE
 from src.data_acquisition.constants import FORCED_TAGS
+from src.data_acquisition.data_retrieval.constants import EXCLUDE_TAGS_BASE, DECOMPOSE_PATTERNS_BASE, WIKI_SPECIFIC
 
 logger = logging.getLogger(__name__)
 
@@ -457,7 +458,7 @@ if __name__ == '__main__':
         # 'https://en.wikipedia.org/wiki/List_of_people_from_Brno')
         # 'https://www.brno.cz/mestske-casti-prehled')
         # 'https://en.brno.cz/')
-        'https://www.gotobrno.cz/en/explore-brno/go-to-brnos-holy-sites/')
+        'https://www.gotobrno.cz/en/events/made-by-fire/')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())

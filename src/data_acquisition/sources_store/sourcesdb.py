@@ -1,16 +1,25 @@
 import logging
+import os
+
 import mysql
 import pandas as pd
+from dotenv import load_dotenv
 from mysqlx import Error
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
-from src.data_acquisition.constants import TYPE_ID, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_SCRAPED
+from src.data_acquisition.constants import TYPE_ID, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_SCRAPED, STATIC, PDF
 from src.data_acquisition.sources_store.constants import CONTENT_TYPES_CSV, RECORD_TYPES_CSV, SOURCES_CSV, \
     BANNED_SOURCES_CSV, PARSED_SOURCES_CSV
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
+load_dotenv()
+
+HOST = os.getenv("DB_HOST")
+USER = os.getenv("DB_USER")
+PASSWORD = os.getenv("DB_PASSWORD")
+DATABASE = os.getenv("DATABASE")
 
 
 class RecordTypes(Base):
@@ -37,7 +46,7 @@ class ParsedSources(Base):
     content_type = relationship("ContentTypes")
 
 
-def create_database(host="localhost", user="root", password="password", database="agent_sources"):
+def create_database(host=HOST, user=USER, password=PASSWORD, database=DATABASE):
     connection = mysql.connector.connect(
         host=host,
         user=user,
@@ -65,7 +74,7 @@ class Sources(Base):
 
 
 class SourcesDB:
-    def __init__(self, host="localhost", user="root", password="password", database="agent_sources"):
+    def __init__(self, host=HOST, user=USER, password=PASSWORD, database=DATABASE):
         self.engine = create_engine(f"mysql+mysqlconnector://{user}:{password}@{host}/{database}")
         Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
@@ -152,8 +161,8 @@ class SourcesDB:
     def get_all_non_banned_non_static_non_pdf_sources_as_dataframe(self) -> pd.DataFrame:
         """Returns all sources that are not banned, not static and not pdf as a DataFrame."""
         df = pd.read_sql(self.session.query(Sources).filter(Sources.banned.is_(False)).filter(
-            Sources.record_type.has(RecordTypes.record_type != 'static')).filter(
-            Sources.record_type.has(RecordTypes.record_type != 'pdf')).statement, self.session.bind)
+            Sources.record_type.has(RecordTypes.record_type != STATIC)).filter(
+            Sources.record_type.has(RecordTypes.record_type != PDF)).statement, self.session.bind)
         return df
 
     def get_all_sources_as_dataframe(self) -> pd.DataFrame:
@@ -164,7 +173,7 @@ class SourcesDB:
     def get_all_static_sources_as_dataframe(self) -> pd.DataFrame:
         """Returns all static sources as a DataFrame."""
         df = pd.read_sql(self.session.query(Sources).filter(
-            Sources.record_type.has(RecordTypes.record_type == 'static')).statement, self.session.bind)
+            Sources.record_type.has(RecordTypes.record_type == STATIC)).statement, self.session.bind)
         return df
 
     def get_all_parents(self) -> list[str]:
@@ -259,16 +268,17 @@ class SourcesDB:
         self.session.add_all(source_objects)
         self.session.commit()
 
-    def add_parsed_source(self, url: str, content: str) -> None:
+    def add_parsed_source(self, url: str, content: str, type_name: str) -> None:
         """Adds a parsed source to the database."""
-        source = ParsedSources(url=url, content=content)
+        source = ParsedSources(url=url, content=content,
+                               content_type_id=self.get_content_type_id_from_record_type_name(type_name))
         self.session.add(source)
         self.session.commit()
 
     def get_all_pdf_urls(self) -> list:
         """Returns all pdf urls."""
         pdf_urls = self.session.query(Sources.url).filter(
-            Sources.record_type.has(RecordTypes.record_type == 'pdf')).all()
+            Sources.record_type.has(RecordTypes.record_type == PDF)).all()
         return [url for url, in pdf_urls]
 
     def get_all_parsed_sources_contents(self) -> list[str]:
@@ -293,6 +303,11 @@ class SourcesDB:
         type_objects = [ContentTypes(content_type=t[0]) for t in content_types]
         self.session.add_all(type_objects)
         self.session.commit()
+
+    def get_content_type_id_from_record_type_name(self, type_name: str) -> int:
+        """Returns the content type id of the given type name."""
+        record_type = self.session.query(RecordTypes).filter(RecordTypes.record_type == type_name).first()
+        return record_type.content_type_id
 
 
 if __name__ == "__main__":
