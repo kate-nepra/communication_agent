@@ -3,16 +3,19 @@ BASE_SCHEMA = {
     "description": "Schema used for places, static and administrative entities",
     "vectorIndexType": "hnsw",
     "vectorIndexConfig": {
-        "vectorizer": "text2vec-transformers"
     },
-    "vectorizer": "text2vec-transformers",
+    "vectorizer": "text2vec-gpt4all",
+    "moduleConfig": {
+        "text2vec-gpt4all": {
+        }
+    },
     "properties": [
         {
             "name": "header",
             "description": "Header of the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -25,7 +28,7 @@ BASE_SCHEMA = {
             "description": "Type of the event record",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": True
                 }
@@ -38,7 +41,7 @@ BASE_SCHEMA = {
             "description": "Brief description of the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -51,7 +54,7 @@ BASE_SCHEMA = {
             "description": "Full text description of the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -64,7 +67,7 @@ BASE_SCHEMA = {
             "description": "URL related to the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -85,7 +88,7 @@ BASE_SCHEMA = {
             "description": "Event address",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -101,16 +104,19 @@ EVENT_SCHEMA = {
     "description": "Schema used for events, like concerts and festivals",
     "vectorIndexType": "hnsw",
     "vectorIndexConfig": {
-        "vectorizer": "text2vec-transformers"
     },
-    "vectorizer": "text2vec-transformers",
+    "vectorizer": "text2vec-gpt4all",
+    "moduleConfig": {
+        "text2vec-gpt4all": {
+        }
+    },
     "properties": [
         {
             "name": "header",
             "description": "Header of the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -123,7 +129,7 @@ EVENT_SCHEMA = {
             "description": "Type of the event record",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": True
                 }
@@ -136,7 +142,7 @@ EVENT_SCHEMA = {
             "description": "Brief description of the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -149,7 +155,7 @@ EVENT_SCHEMA = {
             "description": "Full text description of the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -162,7 +168,7 @@ EVENT_SCHEMA = {
             "description": "URL related to the event",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }
@@ -183,7 +189,7 @@ EVENT_SCHEMA = {
             "description": "Event address",
             "dataType": ["text"],
             "moduleConfig": {
-                "text2vec-transformers": {
+                "text2vec-gpt4all": {
                     "skip": False,
                     "vectorizePropertyName": False
                 }

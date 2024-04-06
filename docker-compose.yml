@@ -26,6 +26,8 @@ services:
       CLUSTER_HOSTNAME: 'node1'
   t2v-transformers:
     image: cr.weaviate.io/semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+  reranker-transformers:
+    image: cr.weaviate.io/semitechnologies/reranker-transformers:cross-encoder-ms-marco-MiniLM-L-6-v2
     environment:
       ENABLE_CUDA: '0'
 volumes:
