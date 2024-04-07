@@ -111,3 +111,5 @@ weaviate-client==4.5.5
 wrapt==1.16.0
 wsproto==1.2.0
 yarl==1.9.4
+fake_useragent
+torch
