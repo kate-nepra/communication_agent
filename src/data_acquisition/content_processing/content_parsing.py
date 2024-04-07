@@ -64,7 +64,7 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
         If you encounter a descriptive text of the entity, for example a plot of a theatrical performance for an event or a menu of a restaurant for a place, assign it as the text. Do not shorten it, do not omit any important information.
         Create a brief which is a sum up of the text no longer than 3 sentences.
         Assign provided url as url.
-        If you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required.
+        For non-static entities, if you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required.
         For an event, assign date(s) of the event as list of durations. The duration format is a JSON object {dates_format} with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time. For example {dates}.
       3. End with the function call response, the function call must be in valid JSON format.
     URL is {url}. 
