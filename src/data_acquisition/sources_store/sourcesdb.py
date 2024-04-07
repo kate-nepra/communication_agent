@@ -2,9 +2,9 @@ import logging
 import os
 
 import mysql
+import mysql.connector
 import pandas as pd
 from dotenv import load_dotenv
-from mysqlx import Error
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
@@ -57,8 +57,8 @@ def create_database(host=HOST, user=USER, password=PASSWORD, database=DATABASE):
     try:
         cursor.execute(query)
         logger.info("Database created successfully")
-    except Error as err:
-        logger.error(f"Error: '{err}'")
+    except Exception as e:
+        logger.error(f"Error: '{e}'")
 
 
 class Sources(Base):
