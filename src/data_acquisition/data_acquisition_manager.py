@@ -1,10 +1,12 @@
 import json
 import os
+import time
+
 import arrow
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.agents.api_agent import ApiAgent, LlamaApiAgent
+from src.agents.api_agent import ApiAgent, LlamaApiAgent, OllamaApiAgent
 from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
@@ -147,10 +149,11 @@ class DataAcquisitionManager:
                 continue
             for t in ws.get_clean_texts():
                 content = get_parsed_content_by_function_call(self.agent, url, t)
-                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
-                type_name = content.record_type
-                to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self.sources_db.get_type_id(type_name)
-                to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
+                if content:
+                    self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
+                    type_name = content.record_type
+                    to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self.sources_db.get_type_id(type_name)
+                    to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
         self.sources_db.insert_or_update_sources(to_scrape)
 
     @staticmethod
@@ -247,7 +250,10 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
+    llama_agent = OllamaApiAgent("http://localhost:11434/v1/", "ollama", "llama2:13b")
     dam = DataAcquisitionManager(sources, llama_agent)
+    st = time.time()
     dam.initial_data_acquisition(3)
+    elapsed_time = time.time() - st
+    print('Execution time:', time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
     # dam.update_by_type_name('event')

@@ -111,8 +111,10 @@ class ApiAgent(ABC):
             return function_name, None
         function_arguments = self._parse_function_arguments(response.choices[0].message.function_call.arguments)
         print(function_arguments)
-        if self._do_parameters_match(function_arguments, function_name, params):
-            return function_name, function_arguments
+        matched_arguments = self._match_parameters(function_arguments, function_name, params)
+        if matched_arguments:
+            print(matched_arguments)
+            return function_name, matched_arguments
         return None, None
 
     def _parse_function_arguments(self, function_arguments: dict) -> dict:
@@ -205,15 +207,14 @@ class ApiAgent(ABC):
         return dict(response)
 
     @staticmethod
-    def _do_parameters_match(received_arguments: dict, function_name: str, function_params: list) -> bool:
-        if len(function_params) != len(received_arguments):
-            logger.error(f"Function {function_name} expects {function_params}")
-            return False
-        for arg in received_arguments:
-            if arg not in function_params:
+    def _match_parameters(received_arguments: dict, function_name: str, function_params: list) -> dict:
+        matched_args = {}
+        for arg in function_params:
+            if arg not in received_arguments:
                 logger.error(f"Parameter {arg} not found in function {function_name}")
-                return False
-        return True
+                return {}
+            matched_args[arg] = received_arguments[arg]
+        return matched_args
 
     @staticmethod
     def _does_function_exist(function_name: str, module: dict) -> bool:
@@ -250,7 +251,7 @@ class OpenAIApiAgent(ApiAgent):
 
 class OllamaApiAgent(ApiAgent):
 
-    def get_function_call_response(self, module: dict, functions: list, messages: list[Message], max_retries: int = 2):
+    def get_function_call_response(self, module: dict, functions: list, messages: list[Message], max_retries: int = 5):
         """
         Instruct the model to call a function and get the result of the function call
         :param module: Module containing the functions
@@ -262,7 +263,7 @@ class OllamaApiAgent(ApiAgent):
 
         class FunctionCallOllama(BaseModel):
             name: str = Field(..., description="Name of one of the provided functions that was chosen to be called")
-            arguments: dict = Field(..., description="Arguments of the chosen function")
+            arguments: dict = Field(..., description="Arguments of the chosen function.")
 
         openai_functions = [self._transfer_function_to_openai_function_schema(f) for f in functions]
         config_message = Message(SYSTEM,
@@ -271,6 +272,7 @@ class OllamaApiAgent(ApiAgent):
         messages = [config_message] + messages
         try:
             response = self.get_json_format_response(FunctionCallOllama, messages)
+            print(response)
         except Exception as e:
             if max_retries > 0:
                 logger.error(f"Error getting function call response: {e}. Retrying")
@@ -295,6 +297,8 @@ class OllamaApiAgent(ApiAgent):
         if not params:
             return function_name, None
         function_arguments = self._parse_function_arguments(response["arguments"])
-        if self._do_parameters_match(function_arguments, function_name, params):
-            return function_name, function_arguments
+        matched_arguments = self._match_parameters(function_arguments, function_name, params)
+        if matched_arguments:
+            print(matched_arguments)
+            return function_name, matched_arguments
         return None, None
