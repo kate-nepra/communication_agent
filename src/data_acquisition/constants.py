@@ -30,3 +30,4 @@ UPDATE_INTERVAL = 'update_interval'
 
 SYSTEM = "system"
 USER = "user"
+ASSISTANT = "assistant"
