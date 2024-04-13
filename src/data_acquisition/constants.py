@@ -8,6 +8,11 @@ _config.read(CONSTANTS_CONFIG_PATH)
 CONTENT_SUBSTRINGS = ast.literal_eval(_config['CONTENT_RETRIEVAL']["CONTENT_SUBSTRINGS"])
 
 FORCED_TAGS = ['body', 'main', 'html']
+BASE_URL = 'gotobrno'
+ADDRESS = 'address'
+DEFAULT_ADDRESS = 'Brno, Czech Republic'
+DATES_EXAMPLE = '[{"start": "2024-01-11"}, {"start": "2024-01-14 15:00"}, {"start": "2024-01-31 15:00", "end": "2024-02-14"}]'
+DATES_FORMAT_EXAMPLE = 'dates=[{"start": start_date, "end": end_date}]'
 
 PLACE = 'place'
 EVENT = 'event'
