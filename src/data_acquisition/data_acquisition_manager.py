@@ -251,13 +251,7 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-    llama_url = "https://api.llama-api.com"
-    llama_model = "llama-13b-chat"
-    openai_key = os.getenv("OPEN_AI_API_KEY")
-    openai_url = "https://api.openai.com/v1"
-    openai_model = "gpt-3.5-turbo-1106"
-    llama_agent = LlamaApiAgent(llama_url, os.getenv('LLAMA_API_KEY'), llama_model)
-    openai_agent = OpenAIApiAgent(openai_url, openai_key, openai_model)
+
     ollama_agent = LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
     dam = DataAcquisitionManager(sources, ollama_agent)
     st = time.time()

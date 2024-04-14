@@ -364,13 +364,19 @@ class LocalApiAgent(ApiAgent):
         :return: result of the called function
         """
 
-        function_name, function_schema = self._choose_function_and_schema(module, functions, max_retries, messages)
+        try:
+            function_name, function_schema = self._choose_function_and_schema(module, functions, max_retries, messages)
+        except Exception as e:
+            logger.error(f"Error choosing function and schema: {e}")
+            return
 
         config_message = Message(SYSTEM, f"You are a smart function calling assistant. Your task is to provide "
                                          f"the arguments {self._get_function_params_dict(module[function_name])} for a "
                                          f"function call. Return valid JSON only as a response, no additional text.")
         messages = [config_message] + messages
-        return self._call_for_arguments(function_name, module, function_schema, messages)
+        if self._get_function_parameters(module, function_name):
+            return self._call_for_arguments(function_name, module, function_schema, messages)
+        return module[function_name]()
 
     def _choose_function_and_schema(self, module, functions, max_retries, messages=None):
         if len(functions) > 1:
@@ -383,14 +389,18 @@ class LocalApiAgent(ApiAgent):
                 self._add_messages_initially([config_message] + [self._get_first_user_message(messages)])
             try:
                 name = self._choose_from_functions(module, max_retries)
+                print(f"Function name: {name}")
                 schema = self._function_to_pydantic_model(module[name])
+                print(f"Function schema: {schema}")
             except Exception as e:
+                print(f"Error: {e}")
                 return self._handle_call_exception(e, FUNC_ERR, max_retries,
                                                    lambda: self._choose_function_and_schema(module, functions,
                                                                                             max_retries=max_retries - 1))
         else:
             name = functions[0].__name__
             schema = self._function_to_pydantic_model(functions[0])
+        print(f"Function name: {name}, schema: {schema}")
         return name, schema
 
     def _choose_from_functions(self, module, max_retires):
