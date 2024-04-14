@@ -370,7 +370,9 @@ class LocalApiAgent(ApiAgent):
                                          f"the arguments {self._get_function_params_dict(module[function_name])} for a "
                                          f"function call. Return valid JSON only as a response, no additional text.")
         messages = [config_message] + messages
-        return self._call_for_arguments(function_name, module, function_schema, messages)
+        if self._get_function_parameters(module, function_name):
+            return self._call_for_arguments(function_name, module, function_schema, messages)
+        return module[function_name]()
 
     def _choose_function_and_schema(self, module, functions, max_retries, messages=None):
         if len(functions) > 1:
@@ -391,6 +393,7 @@ class LocalApiAgent(ApiAgent):
         else:
             name = functions[0].__name__
             schema = self._function_to_pydantic_model(functions[0])
+        print(f"Function name: {name}, schema: {schema}")
         return name, schema
 
     def _choose_from_functions(self, module, max_retires):
