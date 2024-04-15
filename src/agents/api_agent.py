@@ -364,7 +364,11 @@ class LocalApiAgent(ApiAgent):
         :return: result of the called function
         """
 
-        function_name, function_schema = self._choose_function_and_schema(module, functions, max_retries, messages)
+        try:
+            function_name, function_schema = self._choose_function_and_schema(module, functions, max_retries, messages)
+        except Exception as e:
+            logger.error(f"Error choosing function and schema: {e}")
+            return
 
         config_message = Message(SYSTEM, f"You are a smart function calling assistant. Your task is to provide "
                                          f"the arguments {self._get_function_params_dict(module[function_name])} for a "
@@ -385,8 +389,11 @@ class LocalApiAgent(ApiAgent):
                 self._add_messages_initially([config_message] + [self._get_first_user_message(messages)])
             try:
                 name = self._choose_from_functions(module, max_retries)
+                print(f"Function name: {name}")
                 schema = self._function_to_pydantic_model(module[name])
+                print(f"Function schema: {schema}")
             except Exception as e:
+                print(f"Error: {e}")
                 return self._handle_call_exception(e, FUNC_ERR, max_retries,
                                                    lambda: self._choose_function_and_schema(module, functions,
                                                                                             max_retries=max_retries - 1))

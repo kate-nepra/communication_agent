@@ -130,6 +130,8 @@ class SourcesDB:
     def get_type_id(self, type_name: str) -> int:
         """ Returns the id of the given type name."""
         record_type = self.session.query(RecordTypes).filter(RecordTypes.record_type == type_name).first()
+        if not record_type:
+            raise ValueError(f"Type '{type_name}' not found in the database.")
         return record_type.id
 
     def insert_sources_from_csv(self, file_path: str) -> None:
