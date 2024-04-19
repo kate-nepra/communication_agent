@@ -197,6 +197,8 @@ class DataAcquisitionManager:
         results = []
         for t in ws.get_clean_texts():
             content = get_parsed_content_by_function_call(self.agent, new_url, t)
+            if not content:
+                continue
             type_id = self.sources_db.get_type_id(content.record_type)
             self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content), content.record_type)
             results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
@@ -227,7 +229,10 @@ class DataAcquisitionManager:
             ws = WebScraper(new_url)
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():
-                    classified_type = self.sources_db.get_type_id(get_content_type_by_function_call(self.agent, ws.html))
+                    type_name = get_content_type_by_function_call(self.agent, ws.html)
+                    if not type_name:
+                        continue
+                    classified_type = self.sources_db.get_type_id(type_name)
                     if not classified_type:
                         continue
                     type_id = int(classified_type)
@@ -258,6 +263,7 @@ if __name__ == '__main__':
     ollama_agent = LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
     dam = DataAcquisitionManager(sources, ollama_agent)
     st = time.time()
+    print('start time:', time.strftime("%H:%M:%S", time.gmtime(st)))
     dam.initial_data_acquisition(3)
     elapsed_time = time.time() - st
     print('Execution time:', time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))

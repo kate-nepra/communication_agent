@@ -13,10 +13,13 @@ import logging
 from src.data_acquisition.constants import SYSTEM, ASSISTANT, USER, ADDRESS, DEFAULT_ADDRESS
 
 logger = logging.getLogger(__name__)
+FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 FUNC_ERR = "Error getting function call response: "
 JSON_ERR = "Error getting JSON format response: "
 NO_CALL_ERR = "No function call found in the response."
+CANT_CALL_ERR = "Error calling function "
 
 
 @dataclass
@@ -389,18 +392,18 @@ class LocalApiAgent(ApiAgent):
                 self._add_messages_initially([config_message] + [self._get_first_user_message(messages)])
             try:
                 name = self._choose_from_functions(module, max_retries)
-                print(f"Function name: {name}")
+                print(f"394 Function name: {name}")
                 schema = self._function_to_pydantic_model(module[name])
-                print(f"Function schema: {schema}")
+                print(f"396 Function schema: {schema}")
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"398 Error: {e}")
                 return self._handle_call_exception(e, FUNC_ERR, max_retries,
                                                    lambda: self._choose_function_and_schema(module, functions,
                                                                                             max_retries=max_retries - 1))
         else:
             name = functions[0].__name__
             schema = self._function_to_pydantic_model(functions[0])
-        print(f"Function name: {name}, schema: {schema}")
+        print(f"405 Function name: {name}, schema: {schema}")
         return name, schema
 
     def _choose_from_functions(self, module, max_retires):
@@ -453,12 +456,12 @@ class LocalApiAgent(ApiAgent):
         try:
             arguments = self._match_parameters(response, function_name,
                                                self._get_function_parameters(module, function_name))
-            print(f"Function name: {function_name}, arguments: {arguments}")
+            print(f"458 Function name: {function_name}, arguments: {arguments}")
             if arguments:
                 return module[function_name](**arguments)
             return module[function_name]()
         except Exception as e:
-            logger.error(f"Error calling function {function_name}: {e}")
-            self._add_message(Message(USER, f"Error calling function {function_name}: {e}. Retry."))
+            logger.error(f"{CANT_CALL_ERR}{function_name}: {e}")
+            self._add_message(Message(USER, f"{CANT_CALL_ERR}{function_name}: {e}. Retry."))
             return self._call_for_arguments(function_name, module, function_schema,
                                             max_retries=max_retries - 1)
