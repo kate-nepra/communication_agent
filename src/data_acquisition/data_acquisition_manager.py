@@ -134,7 +134,9 @@ class DataAcquisitionManager:
         for chunks, url in docs:
             for chunk in chunks:
                 content = get_parsed_content_by_function_call(self.agent, url, chunk)
-                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
+                if content:
+                    self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
+                                                      content.record_type)
         self.sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
 
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
@@ -181,7 +183,9 @@ class DataAcquisitionManager:
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
                 content = get_parsed_content_by_function_call(self.agent, url, chunk)
-                self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content), content.record_type)
+                if content:
+                    self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
+                                                      content.record_type)
 
     def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
         """
@@ -259,7 +263,7 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-
+    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
     ollama_agent = LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
     dam = DataAcquisitionManager(sources, ollama_agent)
     st = time.time()
@@ -268,4 +272,3 @@ if __name__ == '__main__':
     elapsed_time = time.time() - st
     print('Execution time:', time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
     # dam.update_by_type_name('event')
-# TODO fix date scraped update
