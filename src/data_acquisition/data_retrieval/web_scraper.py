@@ -1,5 +1,6 @@
 import logging
 import re
+import hashlib
 
 from bs4 import BeautifulSoup, Comment, Doctype
 from fake_useragent import UserAgent
@@ -81,6 +82,10 @@ class WebScraper:
             html = soup.prettify()
             self.base_clean_html = self._remove_repeated_parts(html)
         return self.base_clean_html
+
+    def get_encoded_content(self):
+        text = self.get_text_from_html(self.get_cleaned_html())
+        return self._hash_text(text)
 
     @staticmethod
     def _extract_doctype(soup):
@@ -277,8 +282,15 @@ class WebScraper:
         text = re.sub(r'\n(\))', r')', text)
         return re.sub(r'([)|,])\n', r'\1 ', text)
 
-    def get_clean_texts(self, max_size=MAX_SIZE) -> list[str]:
+    def get_chunks(self, max_size=MAX_SIZE) -> list[str]:
         soup = BeautifulSoup(self.get_cleaned_html(), 'html.parser')
+        text = self._get_text(soup)
+        if len(text) > max_size:
+            return self._get_cleaned_html_text_sliced_by_headers(max_size)
+        return [text]
+
+    def get_chunks_from_html(self, html, max_size=MAX_SIZE) -> list[str]:
+        soup = BeautifulSoup(html, 'html.parser')
         text = self._get_text(soup)
         if len(text) > max_size:
             return self._get_cleaned_html_text_sliced_by_headers(max_size)
@@ -352,7 +364,7 @@ class WebScraper:
         for tag in soup.find_all():
             if len(tag.get_text(strip=True)) > 100:
                 return False
-        if len(self.get_clean_texts()) > 500:
+        if len(self.get_chunks()) > 500:
             return False
         return True
 
@@ -450,12 +462,19 @@ class WebScraper:
 
         return [header + r for r in result if len(r) > 200]
 
+    @staticmethod
+    def _hash_text(text):
+        """Hashes the text using SHA-256 algorithm and returns the hexadecimal representation."""
+        hasher = hashlib.sha256()
+        hasher.update(text.encode('utf-8'))
+        return hasher.hexdigest()
+
 
 if __name__ == '__main__':
     ws = WebScraper(
         # 'https://www.gotobrno.cz/en/brno-phenomenon/being-a-guide-in-the-tutankhamun-villa-rapeseed-liquor-cinderella-and-the-patience-of-a-saint/')
         # 'https://www.gotobrno.cz/en/place/church-of-st-james-kostel-sv-jakuba/')
-        # 'https://en.wikipedia.org/wiki/List_of_people_from_Brno')
+        # 'https://en.wikipedia.org/wiki/Brno')
         # 'https://www.brno.cz/mestske-casti-prehled')
         # 'https://en.brno.cz/')
         'https://www.gotobrno.cz/en/events/made-by-fire/')

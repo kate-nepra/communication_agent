@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 
 from src.agents.api_agent import ApiAgent, LlamaApiAgent, LocalApiAgent, OpenAIApiAgent
 from src.constants import DATE_FORMAT
-from src.data_acquisition.constants import URL, DATE_SCRAPED, TYPE_ID, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL
+from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
+    ENCODED_CONTENT
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
@@ -50,8 +51,8 @@ class DataAcquisitionManager:
             self._update_existing_urls(existing_urls)
         extend_df = extend_df[~extend_df[URL].isin(existing_urls)]
         extend_df = self._remove_banned(self.sources_db.get_banned_urls(), extend_df)
-        extend_df[DATE_SCRAPED] = None
-        extend_df[TYPE_ID] = None
+        extend_df[DATE_PARSED] = None
+        extend_df[TYPE_IDS] = None
         return extend_df
 
     def acquire_data(self, urls_df, iterations: int) -> None:
@@ -74,7 +75,7 @@ class DataAcquisitionManager:
             new_df = self._get_new_urls_from_url(url)
             self.sources_db.insert_or_update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id(PDF))]
+        acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]]
         return acquired
 
     def _update_urls(self, urls: list) -> pd.DataFrame:
@@ -86,9 +87,9 @@ class DataAcquisitionManager:
         acquired = pd.DataFrame()
         for url in urls:
             new_df = self._get_new_urls_from_url(url)
-            self.sources_db.update_sources(new_df)
+            self.sources_db.insert_or_update_sources(new_df)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[acquired[TYPE_ID] != int(self.sources_db.get_type_id(PDF))]
+        acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]]
         return acquired
 
     def initial_data_acquisition(self, iterations: int) -> None:
@@ -126,6 +127,7 @@ class DataAcquisitionManager:
             self._update_pdfs()
             return
         data_df = self.sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
+        data_df[TYPE_IDS] = data_df[TYPE_IDS].astype('object')
         self._scrape_and_update_sources(data_df)
 
     def _update_pdfs(self) -> None:
@@ -145,18 +147,24 @@ class DataAcquisitionManager:
         :param to_scrape: DataFrame with the urls to be scraped
         :return:
         """
-        for url in to_scrape[URL]:
+        to_scrape[TYPE_IDS] = None
+        for index, row in to_scrape.iterrows():
+            url = row[URL]
             ws = WebScraper(url)
             if self._is_banned(ws, url, []):
                 continue
-            for t in ws.get_clean_texts():
+            type_ids = []
+            for t in ws.get_chunks():
                 content = get_parsed_content_by_function_call(self.agent, url, t)
                 if content:
                     self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
                                                       content.record_type)
                     type_name = content.record_type
-                    to_scrape.loc[to_scrape[URL] == url, TYPE_ID] = self.sources_db.get_type_id(type_name)
-                    to_scrape.loc[to_scrape[URL] == url, DATE_SCRAPED] = arrow.now().format(DATE_FORMAT)
+                    type_ids.append(self.sources_db.get_type_id(type_name))
+
+            if type_ids:
+                to_scrape.at[index, TYPE_IDS] = type_ids
+                to_scrape.at[index, DATE_PARSED] = arrow.now().format(DATE_FORMAT)
         self.sources_db.insert_or_update_sources(to_scrape)
 
     @staticmethod
@@ -178,7 +186,7 @@ class DataAcquisitionManager:
         gotobrno are allowed."""
         if BASE_URL in url:
             self.sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
-                                                 None, parent_url, int(self.sources_db.get_type_id(PDF)))
+                                                 None, parent_url, [int(self.sources_db.get_type_id(PDF))])
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
@@ -187,7 +195,7 @@ class DataAcquisitionManager:
                     self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
                                                       content.record_type)
 
-    def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, int, str]]:
+    def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, list, str, str]]:
         """
         This method processes the non crawl_only urls. It scrapes the contents of the web page and passes the scraped
         data to the parser.
@@ -196,17 +204,18 @@ class DataAcquisitionManager:
         :return: List of lists with the processed data, where each list contains the following elements:
             - crawl_only: boolean
             - type_id: int
-            - date_scraped: str
+            - DATE_PARSED: str
         """
-        results = []
-        for t in ws.get_clean_texts():
+        types = []
+        encoded_content = ws.get_encoded_content()
+        for t in ws.get_chunks():
             content = get_parsed_content_by_function_call(self.agent, new_url, t)
             if not content:
                 continue
             type_id = self.sources_db.get_type_id(content.record_type)
             self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content), content.record_type)
-            results.append([False, type_id, arrow.now().format(DATE_FORMAT)])
-        return results
+            types.append(type_id)
+        return [False, types, arrow.now().format(DATE_FORMAT), encoded_content]
 
     def _get_new_urls_from_url(self, url: str) -> pd.DataFrame:
         """
@@ -240,13 +249,12 @@ class DataAcquisitionManager:
                     if not classified_type:
                         continue
                     type_id = int(classified_type)
-                    new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_ID]] = [True, type_id]
+                    new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_IDS]] = [True, [type_id]]
                 else:
                     processed = self._process_non_crawl_only(new_url, ws)
-                    for crawl_only, type_id, date_scraped in processed:
-                        new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, DATE_SCRAPED, TYPE_ID]] = [crawl_only,
-                                                                                                       date_scraped,
-                                                                                                       type_id]
+                    for crawl_only, type_id, date_parsed, encoded_content in processed:
+                        new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, DATE_PARSED, TYPE_IDS, ENCODED_CONTENT]] = \
+                            [crawl_only, date_parsed, type_id, encoded_content]
         new_urls = self._remove_banned(banned, new_urls)
         return new_urls
 
@@ -263,12 +271,14 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
+    openai_agent = OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPEN_AI_API_KEY"), "gpt-3.5-turbo-1106")
+    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama3-8b")
     ollama_agent = LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
-    dam = DataAcquisitionManager(sources, ollama_agent)
+    ollama_agent_x = LocalApiAgent("http://localhost:8881/v1/", "ollama", "mixtral")
+    ollama_agent_l3 = LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3")
+    dam = DataAcquisitionManager(sources, llama_agent)
     st = time.time()
     print('start time:', time.strftime("%H:%M:%S", time.gmtime(st)))
     dam.initial_data_acquisition(3)
     elapsed_time = time.time() - st
     print('Execution time:', time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-    # dam.update_by_type_name('event')

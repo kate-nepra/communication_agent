@@ -25,13 +25,14 @@ ROOT = 'root'
 ID = 'id'
 URL = 'url'
 DATE_ADDED = 'date_added'
-DATE_SCRAPED = 'date_scraped'
+DATE_PARSED = 'date_parsed'
 BANNED = 'banned'
 CRAWL_ONLY = 'crawl_only'
 PARENT = 'parent'
 TYPE = 'record_type'
-TYPE_ID = 'type_id'
+TYPE_IDS = 'type_ids'
 UPDATE_INTERVAL = 'update_interval'
+ENCODED_CONTENT = 'encoded_content'
 
 SYSTEM = "system"
 USER = "user"

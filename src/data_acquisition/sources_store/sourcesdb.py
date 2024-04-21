@@ -5,10 +5,10 @@ import mysql
 import mysql.connector
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey, Table, and_
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
-
-from src.data_acquisition.constants import TYPE_ID, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_SCRAPED, STATIC, PDF
+from sqlalchemy.exc import IntegrityError
+from src.data_acquisition.constants import TYPE_IDS, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_PARSED, STATIC, PDF
 from src.data_acquisition.sources_store.constants import CONTENT_TYPES_CSV, RECORD_TYPES_CSV, SOURCES_CSV, \
     BANNED_SOURCES_CSV, PARSED_SOURCES_CSV
 
@@ -20,30 +20,6 @@ HOST = os.getenv("DB_HOST")
 USER = os.getenv("DB_USER")
 PASSWORD = os.getenv("DB_PASSWORD")
 DATABASE = os.getenv("DATABASE")
-
-
-class RecordTypes(Base):
-    __tablename__ = 'record_types'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    record_type = Column(String(255), unique=True, nullable=False)
-    update_interval = Column(String(255), nullable=False)
-    content_type_id = Column(Integer, ForeignKey('content_types.id'), nullable=False)
-    content_type = relationship("ContentTypes")
-
-
-class ContentTypes(Base):
-    __tablename__ = 'content_types'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    content_type = Column(String(255), unique=True, nullable=False)
-
-
-class ParsedSources(Base):
-    __tablename__ = 'parsed_sources'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    url = Column(String(255), nullable=False)
-    content = Column(String(5000), nullable=False)
-    content_type_id = Column(Integer, ForeignKey('content_types.id'), nullable=False)
-    content_type = relationship("ContentTypes")
 
 
 def create_database(host=HOST, user=USER, password=PASSWORD, database=DATABASE):
@@ -61,16 +37,48 @@ def create_database(host=HOST, user=USER, password=PASSWORD, database=DATABASE):
         logger.error(f"Error: '{e}'")
 
 
+class ContentTypes(Base):
+    __tablename__ = 'content_types'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    content_type = Column(String(255), unique=True, nullable=False)
+
+
+class ParsedSources(Base):
+    __tablename__ = 'parsed_sources'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    url = Column(String(255), nullable=False)
+    content = Column(String(5000), nullable=False)
+    content_type_id = Column(Integer, ForeignKey('content_types.id'), nullable=False)
+    content_type = relationship("ContentTypes")
+
+
+source_record_types = Table(
+    'source_record_types',
+    Base.metadata,
+    Column('source_id', String(255), ForeignKey('sources.url')),
+    Column('record_type_id', Integer, ForeignKey('record_types.id'))
+)
+
+
+class RecordTypes(Base):
+    __tablename__ = 'record_types'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    record_type = Column(String(255), unique=True, nullable=False)
+    update_interval = Column(String(255), nullable=False)
+    content_type_id = Column(Integer, ForeignKey('content_types.id'), nullable=False)
+    content_type = relationship("ContentTypes")
+
+
 class Sources(Base):
     __tablename__ = 'sources'
     url = Column(String(255), primary_key=True, unique=True, nullable=False)
     date_added = Column(Date, nullable=False)
-    date_scraped = Column(Date, nullable=True)
+    date_parsed = Column(Date, nullable=True)
     banned = Column(Boolean, nullable=False, default=False)
     crawl_only = Column(Boolean, nullable=True, default=True)
     parent = Column(String(255), nullable=True)
-    type_id = Column(Integer, ForeignKey('record_types.id'), nullable=True)
-    record_type = relationship("RecordTypes")
+    encoded_content = Column(String(255), nullable=True)
+    record_types = relationship("RecordTypes", secondary=source_record_types)
 
 
 class SourcesDB:
@@ -80,32 +88,45 @@ class SourcesDB:
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def add_or_update_source(self, url: str, date_added: str, date_scraped: str, crawl_only: bool, parent: str,
-                             type_id: int):
+    def add_or_update_source(self, url: str, date_added: str, date_parsed: str, crawl_only: bool, parent: str,
+                             type_ids: list):
         """
-        Adds or updates a source in the database.
+        Adds or updates a source in the database with multiple record types.
         :param url: Primary key - url of the source.
         :param date_added: Date when the source was added.
-        :param date_scraped: Date when the source was last scraped.
+        :param date_parsed: Date when the source was last scraped.
         :param crawl_only: Flag if the source is crawl only.
         :param parent: Parent of the source.
-        :param type_id: Type of the source.
+        :param type_ids: List of type ids associated with the source.
         :return:
         """
-        source = Sources(url=url, date_added=date_added, date_scraped=date_scraped, crawl_only=crawl_only,
-                         parent=parent, type_id=type_id)
-        self.session.merge(source)
+        source = Sources(url=url, date_added=date_added, date_parsed=date_parsed, crawl_only=crawl_only,
+                         parent=parent)
+
+        for type_id in type_ids:
+            record_type = self.session.query(RecordTypes).filter_by(id=type_id).first()
+            if record_type:
+                source.record_types.append(record_type)
+
+        self.session.add(source)
         self.session.commit()
 
     def add_sources(self, sources: list[tuple]):
         """
-        Adds sources to the database.
-        :param sources: Source list with the following columns: url, date_added, crawl_only, parent, type_id.
-        :return:
+        Adds sources and their record types to the database.
+        :param sources: Source list with the following columns: url, date_added, crawl_only, parent, type_ids.
         """
-        source_objects = [Sources(url=s[0], date_added=s[1], crawl_only=s[2], parent=s[3], type_id=s[4]) for s in
-                          sources]
-        self.session.add_all(source_objects)
+        for source_data in sources:
+            url, date_added, crawl_only, parent, type_ids = source_data
+            new_source = Sources(url=url, date_added=date_added, crawl_only=crawl_only, parent=parent)
+
+            for type_id in type_ids:
+                record_type = self.session.query(RecordTypes).get(type_id)
+                if record_type:
+                    new_source.record_types.append(record_type)
+
+            self.session.add(new_source)
+
         self.session.commit()
 
     def add_type(self, record_type: str, update_interval: str, content_type_id: int):
@@ -135,12 +156,22 @@ class SourcesDB:
         return record_type.id
 
     def insert_sources_from_csv(self, file_path: str) -> None:
-        """Inserts sources from given csv file."""
+        """Inserts sources from a given CSV file."""
         data = pd.read_csv(file_path)
-        data[TYPE_ID] = data[TYPE].apply(lambda x: self.get_type_id(x))
-        data = data[[URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE_ID]]
+        data[TYPE_IDS] = data.apply(lambda row: self.get_type_ids(row), axis=1)
+        data = data[[URL, DATE_ADDED, CRAWL_ONLY, PARENT, TYPE_IDS]]
         csv_sources = [tuple(row) for row in data.values]
         self.add_sources(csv_sources)
+
+    def get_type_ids(self, row) -> list:
+        """Get the IDs of record types for a source."""
+        type_names = row[TYPE].split(', ')
+        type_ids = []
+        for type_name in type_names:
+            type_id = self.get_type_id(type_name)
+            if type_id is not None:
+                type_ids.append(type_id)
+        return type_ids
 
     def insert_types_from_csv(self, file_path: str) -> None:
         """Inserts record types from given csv file."""
@@ -161,10 +192,13 @@ class SourcesDB:
         self.add_parsed_sources(parsed_sources)
 
     def get_all_non_banned_non_static_non_pdf_sources_as_dataframe(self) -> pd.DataFrame:
-        """Returns all sources that are not banned, not static and not pdf as a DataFrame."""
-        df = pd.read_sql(self.session.query(Sources).filter(Sources.banned.is_(False)).filter(
-            Sources.record_type.has(RecordTypes.record_type != STATIC)).filter(
-            Sources.record_type.has(RecordTypes.record_type != PDF)).statement, self.session.bind)
+        """Returns all sources that are not banned, not static, and not pdf as a DataFrame."""
+
+        query = self.session.query(Sources).filter(Sources.banned.is_(False))
+        query = query.filter(~Sources.record_types.any(
+            RecordTypes.record_type.in_([STATIC, PDF])
+        ))
+        df = pd.read_sql(query.statement, self.session.bind)
         return df
 
     def get_all_sources_as_dataframe(self) -> pd.DataFrame:
@@ -174,8 +208,8 @@ class SourcesDB:
 
     def get_all_static_sources_as_dataframe(self) -> pd.DataFrame:
         """Returns all static sources as a DataFrame."""
-        df = pd.read_sql(self.session.query(Sources).filter(
-            Sources.record_type.has(RecordTypes.record_type == STATIC)).statement, self.session.bind)
+        df = pd.read_sql(self.session.query(Sources).join(Sources.record_types).filter(
+            RecordTypes.record_type == STATIC).statement, self.session.bind)
         return df
 
     def get_all_parents(self) -> list[str]:
@@ -186,7 +220,7 @@ class SourcesDB:
     def get_existing_urls_from_list(self, url_list: list[str]) -> list[str]:
         """Returns the existing urls from the list."""
         query = self.session.query(Sources.url).filter(Sources.url.in_(url_list)).distinct().all()
-        return [url[0] for url in query]
+        return [str(url[0]) for url in query]
 
     def update_existing_urls_date(self, existing_urls: list[str], date_added: str) -> None:
         """Updates the date_added of the existing urls."""
@@ -196,55 +230,57 @@ class SourcesDB:
 
     def insert_sources(self, extend_df: pd.DataFrame) -> None:
         """
-        Inserts the sources in the database.
-        :param extend_df: DataFrame with the sources to insert, the columns are: url, date_added, date_scraped, crawl_only, parent, type_id.
+        Inserts the sources in the database, including the association with record types.
+        :param extend_df: DataFrame with the sources to insert, columns: url, date_added, date_parsed, crawl_only, parent, type_ids (list of record type IDs).
         :return:
         """
         for index, row in extend_df.iterrows():
             source = Sources(
                 url=row[URL] if len(row[URL]) <= 255 else row[URL][:255],
                 date_added=row[DATE_ADDED],
-                date_scraped=row[DATE_SCRAPED],
+                date_parsed=row[DATE_PARSED],
                 crawl_only=row[CRAWL_ONLY],
-                parent=row[PARENT],
-                type_id=row[TYPE_ID]
+                parent=row[PARENT]
             )
+
+            record_type_ids = row[TYPE_IDS] if isinstance(row[TYPE_IDS], list) else [row[TYPE_IDS]]
+            record_types = [self.session.query(RecordTypes).get(record_type_id) for record_type_id in record_type_ids]
+            source.record_types.extend(record_types)
+
             self.session.add(source)
+
         self.session.commit()
 
     def insert_or_update_sources(self, extend_df: pd.DataFrame) -> None:
         """
         Inserts or updates the sources in the database.
-        :param extend_df: DataFrame with the sources to insert or update, the columns are: url, date_added, date_scraped, crawl_only, parent, type_id.
+        :param extend_df: DataFrame with the sources to insert or update, the columns are: url, date_added, date_parsed, crawl_only, parent, type_ids.
         :return:
         """
+
         for index, row in extend_df.iterrows():
+            type_ids = row[TYPE_IDS]
+            if not type_ids:
+                continue
+
             source = Sources(
                 url=row[URL] if len(row[URL]) <= 255 else row[URL][:255],
                 date_added=row[DATE_ADDED],
-                date_scraped=row[DATE_SCRAPED],
+                date_parsed=row[DATE_PARSED],
                 crawl_only=row[CRAWL_ONLY],
-                parent=row[PARENT],
-                type_id=row[TYPE_ID]
+                parent=row[PARENT]
             )
-            self.session.merge(source)
-        self.session.commit()
 
-    def update_sources(self, extend_df: pd.DataFrame) -> None:
-        """
-        Updates the sources in the database.
-        :param extend_df: DataFrame with the sources to update, the columns are: url, date_added, date_scraped, crawl_only, parent, type_id.
-        :return:
-        """
-        for index, row in extend_df.iterrows():
-            self.session.query(Sources).filter(Sources.url == row[URL]).update({
-                Sources.date_added: row[DATE_ADDED],
-                Sources.date_scraped: row[DATE_SCRAPED],
-                Sources.crawl_only: row[CRAWL_ONLY],
-                Sources.parent: row[PARENT],
-                Sources.type_id: row[TYPE_ID]
-            }, synchronize_session=False)
-        self.session.commit()
+            for type_id in type_ids:
+                record_type = self.session.query(RecordTypes).filter(RecordTypes.id == type_id).first()
+                if record_type:
+                    source.record_types.append(record_type)
+
+            try:
+                self.session.add(source)
+                self.session.commit()
+            except IntegrityError:
+                self.session.rollback()
 
     def add_or_update_banned_source(self, banned_source: str, date_added: str) -> None:
         """Adds or updates a banned source in the database."""
@@ -258,11 +294,15 @@ class SourcesDB:
         return [url for url, in banned_urls]
 
     def get_all_non_crawl_only_not_banned_sources_by_type(self, type_name: str) -> pd.DataFrame:
-        """Returns all sources that are not crawl only and not banned of given type."""
-        return pd.read_sql(
-            self.session.query(Sources).filter(Sources.record_type.has(RecordTypes.record_type == type_name)).filter(
-                Sources.banned.is_(False)).filter(Sources.crawl_only.is_(False)).statement,
-            self.session.bind)
+        """Returns all sources that are not crawl only, not banned, and of the given type."""
+        query = self.session.query(Sources).join(Sources.record_types).join(RecordTypes).filter(
+            and_(
+                RecordTypes.record_type == type_name,
+                Sources.banned.is_(False),
+                Sources.crawl_only.is_(False)
+            )
+        )
+        return pd.read_sql(query.statement, self.session.bind)
 
     def add_parsed_sources(self, parsed_sources: list[tuple]) -> None:
         """Adds parsed sources to the database."""
@@ -279,8 +319,9 @@ class SourcesDB:
 
     def get_all_pdf_urls(self) -> list:
         """Returns all pdf urls."""
-        pdf_urls = self.session.query(Sources.url).filter(
-            Sources.record_type.has(RecordTypes.record_type == PDF)).all()
+        pdf_urls = self.session.query(Sources.url).join(Sources.record_types).join(RecordTypes).filter(
+            RecordTypes.record_type == PDF).all()
+
         return [url for url, in pdf_urls]
 
     def get_all_parsed_sources_contents(self) -> list[str]:
