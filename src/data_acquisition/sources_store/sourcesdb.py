@@ -89,7 +89,7 @@ class SourcesDB:
         self.session = Session()
 
     def add_or_update_source(self, url: str, date_added: str, date_parsed: str, crawl_only: bool, parent: str,
-                             type_ids: list):
+                             type_ids: list, encoded_content: str = None):
         """
         Adds or updates a source in the database with multiple record types.
         :param url: Primary key - url of the source.
@@ -98,17 +98,18 @@ class SourcesDB:
         :param crawl_only: Flag if the source is crawl only.
         :param parent: Parent of the source.
         :param type_ids: List of type ids associated with the source.
+        :param encoded_content: Encoded content of the source.
         :return:
         """
         source = Sources(url=url, date_added=date_added, date_parsed=date_parsed, crawl_only=crawl_only,
-                         parent=parent)
+                         parent=parent, encoded_content=encoded_content)
 
         for type_id in type_ids:
             record_type = self.session.query(RecordTypes).filter_by(id=type_id).first()
             if record_type:
                 source.record_types.append(record_type)
 
-        self.session.add(source)
+        self.session.merge(source)
         self.session.commit()
 
     def add_sources(self, sources: list[tuple]):
@@ -271,6 +272,7 @@ class SourcesDB:
                 parent=row[PARENT]
             )
 
+            type_ids = type_ids if isinstance(type_ids, list) else [type_ids]
             for type_id in type_ids:
                 record_type = self.session.query(RecordTypes).filter(RecordTypes.id == type_id).first()
                 if record_type:

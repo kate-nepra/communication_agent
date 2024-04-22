@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from transformers import pipeline
 from src.agents.api_agent import ApiAgent, Message
-from src.data_acquisition.constants import RECORD_TYPE_LABELS, PLACE, EVENT, ADMINISTRATION, STATIC, SYSTEM
+from src.data_acquisition.constants import RECORD_TYPE_LABELS, PLACE, EVENT, ADMINISTRATION, STATIC, SYSTEM, USER
 
 
 def get_content_type_simple(text: str, labels: list[str] = RECORD_TYPE_LABELS) -> str:
@@ -32,12 +32,12 @@ def get_content_type_by_function_call(agent: ApiAgent, content: str) -> str:
                         content=f"""You're a function picker based on given web-scraped text. Follow these instructions:
  1. Take the given text as a one whole entity.
  2. Call one of the given functions, choose one with most fitting description. If the function accepts no parameters, return all (types and content and description and other) but the function name empty.
- 3. Stop when you find the fitting function, you must call only one function.
- Here is the text to process ```{content}```""")]
+ 3. Stop when you find the fitting function, you must call only one function."""),
+                Message(role=USER, content=f"""Here is the text to process ```{content}```""")]
 
-    return agent.get_function_call_response(locals(),
-                                            [assign_place, assign_event, assign_administration, assign_static],
-                                            messages)
+    return agent.get_function_call(locals(),
+                                   [assign_place, assign_event, assign_administration, assign_static],
+                                   messages=messages)
 
 
 def get_content_type_by_json_call(agent: ApiAgent, content: str) -> dict:
@@ -54,7 +54,7 @@ def get_content_type_by_json_call(agent: ApiAgent, content: str) -> dict:
    event: entity that describes events, such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar.
    administration: entity that contains administrative information such as Municipal office, business, authorities, insurance, social Care, vehicle registration, taxes, fees, information for expats, school system, residence, ID cards or similar.
    static: entity that contains various articles, blog posts, or an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative.
- 3. As the response, return only valid JSON with the type of the entity and stop, do not provide any additional text.   
- Here is the text to process ```{content}```""")]
+ 3. As the response, return only valid JSON with the type of the entity and stop, do not provide any additional text."""),
+                Message(role=USER, content=f"""Here is the text to process ```{content}```""")]
 
     return agent.get_json_format_response(ContentType, messages)

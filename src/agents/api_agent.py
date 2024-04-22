@@ -10,6 +10,7 @@ from pydantic import BaseModel, create_model, Field
 from json_repair import repair_json
 import logging
 
+from src.constants import MAX_SIZE
 from src.data_acquisition.constants import SYSTEM, ASSISTANT, USER, ADDRESS, DEFAULT_ADDRESS
 
 logger = logging.getLogger(__name__)
@@ -42,28 +43,8 @@ class ApiAgent(ABC):
         self.model_name = model_name
         self.messages_storage = []
 
-    def _add_message(self, message: Message):
-        """
-        Add a message to the message storage
-        :param message: Message to be added
-        :return:
-        """
-        if len(self.messages_storage) > 10:  # todo limit by tokens and do sum ups
-            self.messages_storage = self.messages_storage[:3]
-        self.messages_storage.append(message)
-
-    def _add_messages_initially(self, messages: list[Message]):
-        """
-        Add a list of messages to the message storage
-        :param messages: List of messages to be added
-        :return:
-        """
-        self.messages_storage = []
-        for m in messages:
-            self._add_message(m)
-
-    def get_function_call_response(self, module: dict, functions: list, messages: list[Message] = None,
-                                   max_retries: int = 2):
+    def get_function_call(self, module: dict, functions: list, max_retries: int = 2,
+                          messages: list[Message] = None):
         """
         Instruct the model to call a function and get the result of the function call
         :param module: Module containing the functions
@@ -75,19 +56,71 @@ class ApiAgent(ABC):
         if messages:
             self._add_messages_initially(messages)
         con_messages = [asdict(m) for m in self.messages_storage]
-        openai_functions = [self._function_to_openai_function_schema(f) for f in functions]
-        if not openai_functions:
-            return None
+        response = self._get_base_response(con_messages, functions)
+        print(f"Response: {response}")
+        self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
+        return self._handle_response_function_call_errors(functions, module, response, max_retries,
+                                                          lambda: self.get_function_call(module, functions,
+                                                                                         max_retries - 1))
+
+    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 2,
+                                 messages: list[Message] = None):
+        if messages:
+            self._add_messages_initially(messages)
+        con_messages = [asdict(m) for m in self.messages_storage]
+        response = self._get_forced_response(con_messages, function, function.__name__)
+        print(f"Response: {response}")
+        self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
+        return self._handle_response_function_call_errors(function, module, response, max_retries,
+                                                          lambda: self.get_forced_function_call(module, function,
+                                                                                                max_retries - 1))
+
+    def get_json_format_response(self, response_model: BaseModel, messages: list[Message] = None,
+                                 max_retries=2) -> dict:
+        """
+        Get the response in desired JSON format
+        :param response_model: Desired response model
+        :param messages: List of messages to be sent to the model
+        :param max_retries: Number of retries
+        :return: dictionary containing the formatted response
+        """
+        if messages:
+            self._add_messages_initially(messages)
+        messages = [asdict(m) for m in self.messages_storage]
+        schema = self._function_to_openai_function_schema(response_model)
+        response = self._get_forced_response(messages, response_model, dict({"name": schema["name"]}))
+        self._add_message(Message(ASSISTANT, str(response)))
+        try:
+
+            parsed = self._repair_output_json(response.choices[0].message.function_call.arguments)
+            return self._match_parameters(parsed, schema["name"], schema["parameters"]["required"])
+        except Exception as e:
+            return self._handle_call_exception(e, JSON_ERR, max_retries,
+                                               lambda: self.get_json_format_response(response_model,
+                                                                                     max_retries=max_retries - 1))
+
+    def _get_base_response(self, messages, functions):
+        schemas = [self._function_to_openai_function_schema(f) for f in functions]
         response = self.client.chat.completions.create(
             model=self.model_name,
-            messages=con_messages,
-            functions=openai_functions,
+            messages=messages,
+            functions=schemas,
             stream=False
         )
-        self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
-        return self._handle_response_function_call_errors(functions, max_retries, module, response)
+        return response
 
-    def _handle_response_function_call_errors(self, functions, max_retries, module, response):
+    def _get_forced_response(self, messages, function, function_call):
+        schema = [self._function_to_openai_function_schema(function)]
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            functions=schema,
+            stream=False,
+            function_call=function_call,
+        )
+        return response
+
+    def _handle_response_function_call_errors(self, functions, module, response, max_retries, handling_function):
         """ Handle the errors in the function call part of the response
         :param functions: Functions that were chosen from
         :param max_retries: Number of retries
@@ -96,9 +129,7 @@ class ApiAgent(ABC):
         :return:
         """
         if response.choices[0].message.function_call is None:
-            self._handle_call_exception("", NO_CALL_ERR, max_retries,
-                                        lambda: self.get_function_call_response(module, functions,
-                                                                                max_retries=max_retries - 1))
+            self._handle_call_exception("", NO_CALL_ERR, max_retries, handling_function)
         return self._handle_function_call_return(functions, max_retries, module, response)
 
     def _handle_call_exception(self, e, error_text, max_retries, handling_function: Callable):
@@ -142,7 +173,7 @@ class ApiAgent(ABC):
         """
         if max_retries > 0:
             logger.error("Could not make function call, retrying.")
-            return self.get_function_call_response(module, functions, max_retries=max_retries - 1)
+            return self.get_function_call(module, functions, max_retries=max_retries - 1)
         logger.error("Could not make function call, max retries reached. Skipping.")
         return None
 
@@ -173,21 +204,47 @@ class ApiAgent(ABC):
         :return: dictionary containing the parsed function arguments
         """
 
-        try:
-            function_arguments = dict(function_arguments)
-        except Exception as e:
-            logger.error("Error parsing function arguments to dictionary: %s. Handling.", e)
-            a = function_arguments.replace('\n', ' ')
-            a = a.replace('\"https\"', 'https')
-            a = a.replace('None', '""')
-            a = repair_json(a)
-            function_arguments = dict(json.loads(a))
+        function_arguments = self._repair_output_json(function_arguments)
         if "description" not in str(function_arguments):
             return self._fix_encoding(function_arguments)
         result = {}
         for key in function_arguments:
             result[key] = function_arguments[key].get("description", "")
         return self._fix_encoding(result)
+
+    def _add_message(self, message: Message):
+        """
+        Add a message to the message storage
+        :param message: Message to be added
+        :return:
+        """
+        if len(self.messages_storage) > 10 or len(str(self.messages_storage)) > MAX_SIZE:
+            self.messages_storage = self.messages_storage[:3]
+        self.messages_storage.append(message)
+
+    def _add_messages_initially(self, messages: list[Message]):
+        """
+        Add a list of messages to the message storage
+        :param messages: List of messages to be added
+        :return:
+        """
+        self.messages_storage = []
+        for m in messages:
+            if isinstance(m, Message):
+                self._add_message(m)
+
+    @staticmethod
+    def _repair_output_json(function_arguments) -> dict:
+        try:
+            function_arguments = dict(function_arguments)
+        except Exception as e:
+            logger.info("Error parsing function arguments to dictionary: %s. Handling.", e)
+            a = function_arguments.replace('\n', ' ')
+            a = a.replace('\"https\"', 'https')
+            a = a.replace('None', '""')
+            a = repair_json(a)
+            function_arguments = dict(json.loads(a))
+        return function_arguments
 
     @staticmethod
     def _fix_encoding(arguments: dict) -> dict:
@@ -232,36 +289,6 @@ class ApiAgent(ABC):
         except Exception as e:
             logger.error(f"Error converting function to OpenAI function schema: {e}")
         return converted
-
-    def get_json_format_response(self, response_model: BaseModel, messages: list[Message] = None,
-                                 max_retries=2) -> dict:
-        """
-        Get the response in desired JSON format
-        :param response_model: Desired response model
-        :param messages: List of messages to be sent to the model
-        :param max_retries: Number of retries
-        :return: dictionary containing the formatted response
-        """
-
-        messages = [asdict(m) for m in messages]
-        client = instructor.patch(
-            self.client,
-            mode=instructor.Mode.JSON,
-        )
-
-        response = client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            response_model=response_model,
-            max_retries=0
-        )
-        self._add_message(Message(ASSISTANT, str(response)))
-        try:
-            return dict(response)
-        except Exception as e:
-            return self._handle_call_exception(e, JSON_ERR, max_retries,
-                                               lambda: self.get_json_format_response(response_model,
-                                                                                     max_retries=max_retries - 1))
 
     def _match_parameters(self, received_arguments: dict, function_name: str, function_params: list) -> dict:
         matched_args = {}
@@ -322,6 +349,24 @@ class ApiAgent(ABC):
 
 
 class LlamaApiAgent(ApiAgent):
+    pass
+
+
+class OpenAIApiAgent(ApiAgent):
+    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 2,
+                                 messages: list[Message] = None):
+        if messages:
+            self._add_messages_initially(messages)
+        con_messages = [asdict(m) for m in self.messages_storage]
+        response = self._get_forced_response(con_messages, function, dict({"name": function.__name__}))
+        print(f"Response: {response}")
+        self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
+        return self._handle_response_function_call_errors(function, module, response, max_retries,
+                                                          lambda: self.get_forced_function_call(module, function,
+                                                                                                max_retries - 1))
+
+
+class LocalApiAgent(ApiAgent):
 
     def get_json_format_response(self, response_model: BaseModel, messages: list[Message] = None,
                                  max_retries=2) -> dict:
@@ -333,31 +378,28 @@ class LlamaApiAgent(ApiAgent):
         :return: dictionary containing the formatted response
         """
         messages = [asdict(m) for m in messages]
-        schema = self._function_to_openai_function_schema(response_model)
-        if not schema:
-            return {}
-        response = self.client.chat.completions.create(
+        client = instructor.patch(
+            self.client,
+            mode=instructor.Mode.JSON,
+        )
+
+        response = client.chat.completions.create(
             model=self.model_name,
             messages=messages,
-            functions=[schema],
-            function_call=dict({"name": schema["name"]}),
-            stream=False,
+            response_model=response_model,
+            max_retries=0
         )
+        print(f"Response: {response}")
         self._add_message(Message(ASSISTANT, str(response)))
         try:
-            return dict(response.choices[0].message.function_call.arguments)
+            return dict(response)
         except Exception as e:
-            return self._handle_json_format_errors(e, max_retries, response_model)
+            return self._handle_call_exception(e, JSON_ERR, max_retries,
+                                               lambda: self.get_json_format_response(response_model,
+                                                                                     max_retries=max_retries - 1))
 
-
-class OpenAIApiAgent(ApiAgent):
-    pass
-
-
-class LocalApiAgent(ApiAgent):
-
-    def get_function_call_response(self, module: dict, functions: list, messages: list[Message] = None,
-                                   max_retries: int = 5):
+    def get_function_call(self, module: dict, functions: list, max_retries: int = 2,
+                          messages: list[Message] = None):
         """
         Instruct the model to call a function and get the result of the function call
         :param module: Module containing the functions
@@ -366,22 +408,28 @@ class LocalApiAgent(ApiAgent):
         :param max_retries: Number of retries
         :return: result of the called function
         """
-
         try:
             function_name, function_schema = self._choose_function_and_schema(module, functions, max_retries, messages)
         except Exception as e:
             logger.error(f"Error choosing function and schema: {e}")
             return
 
-        config_message = Message(SYSTEM, f"You are a smart function calling assistant. Your task is to provide "
-                                         f"the arguments {self._get_function_params_dict(module[function_name])} for a "
-                                         f"function call. Return valid JSON only as a response, no additional text.")
-        messages = [config_message] + messages
+        messages = self._get_messages_with_params_config(messages,
+                                                         self._get_function_params_dict(module[function_name]))
         if self._get_function_parameters(module, function_name):
             return self._call_for_arguments(function_name, module, function_schema, messages)
         return module[function_name]()
 
-    def _choose_function_and_schema(self, module, functions, max_retries, messages=None):
+    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 2,
+                                 messages: list[Message] = None):
+        function_name = function.__name__
+        function_schema = self._function_to_pydantic_model(function)
+        messages = self._get_messages_with_params_config(messages, self._get_function_params_dict(function))
+        if self._get_function_parameters(module, function_name):
+            return self._call_for_arguments(function_name, module, function_schema, messages)
+        return module[function_name]()
+
+    def _choose_function_and_schema(self, module, functions, max_retries=1, messages=None):
         if len(functions) > 1:
             names_and_descriptions = [self._get_function_name_and_description_dict(f) for f in functions]
             if messages:
@@ -392,18 +440,14 @@ class LocalApiAgent(ApiAgent):
                 self._add_messages_initially([config_message] + [self._get_first_user_message(messages)])
             try:
                 name = self._choose_from_functions(module, max_retries)
-                print(f"394 Function name: {name}")
                 schema = self._function_to_pydantic_model(module[name])
-                print(f"396 Function schema: {schema}")
             except Exception as e:
-                print(f"398 Error: {e}")
                 return self._handle_call_exception(e, FUNC_ERR, max_retries,
                                                    lambda: self._choose_function_and_schema(module, functions,
-                                                                                            max_retries=max_retries - 1))
+                                                                                            max_retries - 1))
         else:
             name = functions[0].__name__
             schema = self._function_to_pydantic_model(functions[0])
-        print(f"405 Function name: {name}, schema: {schema}")
         return name, schema
 
     def _choose_from_functions(self, module, max_retires):
@@ -456,7 +500,6 @@ class LocalApiAgent(ApiAgent):
         try:
             arguments = self._match_parameters(response, function_name,
                                                self._get_function_parameters(module, function_name))
-            print(f"458 Function name: {function_name}, arguments: {arguments}")
             if arguments:
                 return module[function_name](**arguments)
             return module[function_name]()
@@ -465,3 +508,11 @@ class LocalApiAgent(ApiAgent):
             self._add_message(Message(USER, f"{CANT_CALL_ERR}{function_name}: {e}. Retry."))
             return self._call_for_arguments(function_name, module, function_schema,
                                             max_retries=max_retries - 1)
+
+    @staticmethod
+    def _get_messages_with_params_config(messages, parameters):
+        config_message = Message(SYSTEM, f"You are a smart function calling assistant. Your task is to provide "
+                                         f"the arguments {parameters} for a "
+                                         f"function call. Return valid JSON only as a response, no additional text.")
+        messages = [config_message] + messages
+        return messages

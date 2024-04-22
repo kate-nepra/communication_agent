@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from src.agents.api_agent import ApiAgent, LlamaApiAgent, LocalApiAgent, OpenAIApiAgent
 from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
-    ENCODED_CONTENT
+    ENCODED_CONTENT, PARENT, RECORD_TYPE_LABELS
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
@@ -147,9 +147,7 @@ class DataAcquisitionManager:
         :param to_scrape: DataFrame with the urls to be scraped
         :return:
         """
-        to_scrape[TYPE_IDS] = None
-        for index, row in to_scrape.iterrows():
-            url = row[URL]
+        for url in to_scrape[URL]:
             ws = WebScraper(url)
             if self._is_banned(ws, url, []):
                 continue
@@ -163,9 +161,10 @@ class DataAcquisitionManager:
                     type_ids.append(self.sources_db.get_type_id(type_name))
 
             if type_ids:
-                to_scrape.at[index, TYPE_IDS] = type_ids
-                to_scrape.at[index, DATE_PARSED] = arrow.now().format(DATE_FORMAT)
-        self.sources_db.insert_or_update_sources(to_scrape)
+                parent = to_scrape[to_scrape[URL] == url][PARENT].values[0]
+                self.sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT),
+                                                     arrow.now().format(DATE_FORMAT),
+                                                     False, parent, type_ids)
 
     @staticmethod
     def _remove_banned(banned: list, extend_df: pd.DataFrame) -> pd.DataFrame:
@@ -243,13 +242,10 @@ class DataAcquisitionManager:
             if not self._is_banned(ws, new_url, banned):
                 if ws.is_crawl_only():
                     type_name = get_content_type_by_function_call(self.agent, ws.html)
-                    if not type_name:
+                    if not type_name or type_name not in RECORD_TYPE_LABELS:
                         continue
-                    classified_type = self.sources_db.get_type_id(type_name)
-                    if not classified_type:
-                        continue
-                    type_id = int(classified_type)
-                    new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_IDS]] = [True, [type_id]]
+                    new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_IDS]] = [True, self.sources_db.get_type_id(
+                        type_name)]
                 else:
                     processed = self._process_non_crawl_only(new_url, ws)
                     for crawl_only, type_id, date_parsed, encoded_content in processed:
@@ -271,12 +267,12 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-    openai_agent = OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPEN_AI_API_KEY"), "gpt-3.5-turbo-1106")
-    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama3-8b")
-    ollama_agent = LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
-    ollama_agent_x = LocalApiAgent("http://localhost:8881/v1/", "ollama", "mixtral")
-    ollama_agent_l3 = LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3")
-    dam = DataAcquisitionManager(sources, llama_agent)
+    # OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPEN_AI_API_KEY"), "gpt-3.5-turbo-1106")
+    agent = LocalApiAgent("http://localhost:8881/v1/", "ollama", "mixtral")
+    # LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3"))
+    # LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
+    # LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
+    dam = DataAcquisitionManager(sources, agent)
     st = time.time()
     print('start time:', time.strftime("%H:%M:%S", time.gmtime(st)))
     dam.initial_data_acquisition(3)

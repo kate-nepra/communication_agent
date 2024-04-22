@@ -1,13 +1,16 @@
+import logging
 from dataclasses import dataclass
 import arrow
 from dotenv import load_dotenv
 
-from src.agents.api_agent import ApiAgent, Message
+from src.agents.api_agent import ApiAgent, Message, LocalApiAgent
 from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import STATIC, PLACE, EVENT, ADMINISTRATION, SYSTEM, USER, DATES_EXAMPLE, \
-    DATES_FORMAT_EXAMPLE
+    DATES_FORMAT_EXAMPLE, RECORD_TYPE_LABELS
+from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -66,8 +69,17 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
                 Message(role=USER,
                         content=f"""Here is the text to process ```{content}```""")]
 
-    return agent.get_function_call_response(locals(), [add_place, add_administration, add_static, add_event],
-                                            messages)
+    return agent.get_function_call(locals(), [add_place, add_administration, add_static, add_event],
+                                   messages=messages)
+
+
+def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
+    content_type = get_content_type_by_function_call(agent, content)
+    logger.info(f"Content type: {content_type}")
+    if content_type not in RECORD_TYPE_LABELS:
+        logger.error(f"Unknown content type: {content_type}")
+        return get_parsed_content_by_divided_function_call(agent, url, content)
+    return get_parsed_by_type(content_type, agent, url, content)
 
 
 def get_parsed_by_type(record_type, agent: ApiAgent, url: str, content: str) -> BaseSchema:
@@ -103,10 +115,10 @@ For an event entity: assign date(s) of the event as list of durations. The durat
     The descriptive text of the entity (for example a plot of a theatrical performance for an event, insurance application process for administration, or a menu of a restaurant for a place) must be assigned it as the text parameter. Do NOT SHORTEN it, do NOT OMIT any important information. 
     Create a brief which is a sum up of the text no longer than 3 sentences. 
     If you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required. {event_specific}
- 3. End with the function call response in valid JSON format., do NOT add any additional text."""
+ 3. End with function call response of provided function schema in valid JSON format. Do NOT add any additional text."""
 
         return [Message(role=SYSTEM, content=system_message),
                 Message(role=USER, content=f"""Here is the text to process ```{content}```""")]
 
-    return agent.get_function_call_response(locals(), [get_params_event] if record_type == EVENT else [get_params_base],
-                                            _get_messages(record_type))
+    return agent.get_forced_function_call(locals(), get_params_event if record_type == EVENT else get_params_base,
+                                          messages=_get_messages(record_type))
