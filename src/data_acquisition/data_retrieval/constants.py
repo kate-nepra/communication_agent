@@ -14,7 +14,7 @@ DECOMPOSE_PATTERNS_BASE = [".*accessibility.*", ".*cookie.*", ".*social.*", ".*s
                            ".*intro__scroll.*", ".*vhide.*", ".*icon.*", ".*logo.*", ".*btn.*", ".*img.*", ".*image.*",
                            ".*f-std.*", ".*screen-reader.*", ".*lang.*", ".*login.*", ".*register.*", ".*noprint.*",
                            ".*hidden.*", ".*accordion.*", ".*actions.*", ".*jump.*", ".*shop.*", ".*cart.*",
-                           ".*citation.*"]
+                           ".*citation.*", ".*privacy.*"]
 
 WIKI_SPECIFIC = [".*ib-settlement-caption.*", ".*wikitable.*", ".*Gallery.*", ".*toccolours.*", ".*References.*",
                  ".*Notes.*", ".*Further reading.*", ".*External links.*", ".*See_also.*", ".*Coordinates.*",

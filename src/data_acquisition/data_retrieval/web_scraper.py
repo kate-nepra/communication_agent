@@ -2,7 +2,7 @@ import logging
 import re
 import hashlib
 
-from bs4 import BeautifulSoup, Comment, Doctype
+from bs4 import BeautifulSoup, Comment, Doctype, element
 from fake_useragent import UserAgent
 import requests
 import copy
@@ -83,7 +83,7 @@ class WebScraper:
             self.base_clean_html = self._remove_repeated_parts(html)
         return self.base_clean_html
 
-    def get_encoded_content(self):
+    def get_encoded_content(self) -> str:
         text = self.get_text_from_html(self.get_cleaned_html())
         return self._hash_text(text)
 
@@ -380,39 +380,61 @@ class WebScraper:
                 return True
         return False
 
-    @staticmethod
-    def _slice_html_by_size(html, max_size):
+    def _slice_html_by_size(self, html, max_size):
         sliced_chunks = []
         current_chunk = ''
         current_length = 0
         soup = BeautifulSoup(html, 'html.parser')
+        soup = self._unwrap_lenghty_tags(max_size, soup)
+        soup = self._wrap_naked_text(soup)
+        for tag in soup.find_all(recursive=False):
+            current_chunk, sliced_chunks, current_length = self._slice_tag(current_chunk, current_length, max_size,
+                                                                           sliced_chunks, tag)
+        if current_chunk:
+            sliced_chunks.append(current_chunk)
+        return sliced_chunks
 
+    def _slice_tag(self, current_chunk, current_length, max_size, sliced_chunks, tag):
+        if current_length + len(tag.get_text().strip()) > max_size:
+            if current_chunk:
+                sliced_chunks.append(current_chunk)
+                current_chunk = ''
+                current_length = 0
+        if len(tag.get_text().strip()) > max_size:
+            current_chunk, current_length = self._slice_inter(current_chunk, current_length, max_size, sliced_chunks,
+                                                              tag)
+        current_chunk += str(tag).strip()
+        current_length += len(tag.get_text(strip=True))
+        return current_chunk, sliced_chunks, current_length
+
+    @staticmethod
+    def _slice_inter(current_chunk, current_length, max_size, sliced_chunks, tag):
+        tag_text = tag.get_text().strip()
+        while len(tag_text) > max_size:
+            index = tag_text.rfind('\n', 0, max_size) or tag_text.rfind('.', 0, max_size)
+            if index == -1:
+                break
+            current_chunk = tag_text[:index + 1]
+            sliced_chunks.append(current_chunk)
+            current_chunk = tag_text[index + 1:]
+            current_length = len(current_chunk)
+        return current_chunk, current_length
+
+    @staticmethod
+    def _unwrap_lenghty_tags(max_size, soup):
         for tag in soup.find_all():
             if len(tag.get_text()) > max_size:
                 tag.unwrap()
+        return soup
 
-        for tag in soup.find_all(recursive=False):
-            if current_length + len(tag.get_text().strip()) > max_size:
-                if current_chunk:
-                    sliced_chunks.append(current_chunk)
-                    current_chunk = ''
-                    current_length = 0
-            if len(tag.get_text().strip()) > max_size:
-                tag_text = tag.get_text().strip()
-                while len(tag_text) > max_size:
-                    index = tag_text.rfind('\n', 0, max_size) or tag_text.rfind('.', 0, max_size)
-                    if index == -1:
-                        break
-                    current_chunk = tag_text[:index + 1]
-                    sliced_chunks.append(current_chunk)
-                    current_chunk = tag_text[index + 1:]
-                    current_length = len(current_chunk)
-            current_chunk += str(tag).strip()
-            current_length += len(tag.get_text(strip=True))
-        if current_chunk:
-            sliced_chunks.append(current_chunk)
-
-        return sliced_chunks
+    @staticmethod
+    def _wrap_naked_text(soup):
+        for node in soup:
+            if isinstance(node, element.NavigableString):
+                tag = soup.new_tag('p')
+                tag.append(str(node))
+                node.replace_with(tag)
+        return soup
 
     @staticmethod
     def _slice_by_name(html, name):
@@ -477,12 +499,12 @@ if __name__ == '__main__':
         # 'https://en.wikipedia.org/wiki/Brno')
         # 'https://www.brno.cz/mestske-casti-prehled')
         # 'https://en.brno.cz/')
-        'https://www.gotobrno.cz/en/events/made-by-fire/')
+        'https://www.ndbrno.cz/en/program/tri-sestry-3/')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())
     print('Main header:', ws.get_main_header())
-    chunks = ws.get_clean_texts()
+    chunks = ws.get_chunks()
     for chunk in chunks:
         print('-------------------------------------------------------------------')
         print('Length:', len(chunk))

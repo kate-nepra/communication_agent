@@ -18,7 +18,7 @@ class WebCrawler:
 
     def get_extend_df(self) -> pd.DataFrame:
         """Returns a DataFrame with the crawled urls from the given website."""
-        html = self.ws.get_base_clean_html()
+        html = self.ws.html
         main_url = self._get_parent_part_url(self.url)
         urls = []
         if not self._is_url_in_parents(main_url):
@@ -92,3 +92,9 @@ class WebCrawler:
     def _del_subset(substr, urls) -> list[str]:
         """Deletes the urls containing the given substring."""
         return [url for url in urls if substr not in url]
+
+
+if __name__ == '__main__':
+    crawler = WebCrawler('https://www.gotobrno.cz/en/events-in-brno/?pageload=9&date=2024-04-24&type=grid', [])
+    for url in crawler.get_extend_df()[URL]:
+        print(f"'{url}',")

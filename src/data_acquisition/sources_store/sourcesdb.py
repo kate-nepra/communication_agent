@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey, Table, and_
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from sqlalchemy.exc import IntegrityError
-from src.data_acquisition.constants import TYPE_IDS, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_PARSED, STATIC, PDF
+from src.data_acquisition.constants import TYPE_IDS, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_PARSED, STATIC, \
+    PDF, ENCODED_CONTENT
 from src.data_acquisition.sources_store.constants import CONTENT_TYPES_CSV, RECORD_TYPES_CSV, SOURCES_CSV, \
     BANNED_SOURCES_CSV, PARSED_SOURCES_CSV
 
@@ -269,7 +270,8 @@ class SourcesDB:
                 date_added=row[DATE_ADDED],
                 date_parsed=row[DATE_PARSED],
                 crawl_only=row[CRAWL_ONLY],
-                parent=row[PARENT]
+                parent=row[PARENT],
+                encoded_content=row[ENCODED_CONTENT] if ENCODED_CONTENT in row else None
             )
 
             type_ids = type_ids if isinstance(type_ids, list) else [type_ids]
@@ -353,6 +355,27 @@ class SourcesDB:
         """Returns the content type id of the given type name."""
         record_type = self.session.query(RecordTypes).filter(RecordTypes.record_type == type_name).first()
         return record_type.content_type_id
+
+    def insert_or_update_source(self, url: str, date_added: str, date_parsed: str, crawl_only: bool, parent: str,
+                                type_ids: list, encoded_content: str = None):
+        """Inserts or updates a source in the database."""
+        source = Sources(url=url, date_added=date_added, date_parsed=date_parsed, crawl_only=crawl_only,
+                         parent=parent, encoded_content=encoded_content)
+        logger.info(f"Inserting or updating source {url}, date_added: {date_added}, date_parsed: {date_parsed}, "
+                    f"crawl_only: {crawl_only}, parent: {parent}, type_ids: {type_ids}, encoded_content: {encoded_content}")
+        for type_id in type_ids:
+            record_type = self.session.query(RecordTypes).filter_by(id=type_id).first()
+            if record_type:
+                source.record_types.append(record_type)
+        self.session.merge(source)
+        self.session.commit()
+
+    def get_encoded_content(self, url: str):
+        """Returns the encoded content of the source of the given url."""
+        source = self.session.query(Sources).filter(Sources.url == url).first()
+        if not source:
+            return None
+        return source.encoded_content
 
 
 if __name__ == "__main__":

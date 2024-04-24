@@ -1,6 +1,8 @@
 import json
+import logging
 import os
 import time
+from typing import Tuple, List
 
 import arrow
 import pandas as pd
@@ -9,13 +11,15 @@ from dotenv import load_dotenv
 from src.agents.api_agent import ApiAgent, LlamaApiAgent, LocalApiAgent, OpenAIApiAgent
 from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
-    ENCODED_CONTENT, PARENT, RECORD_TYPE_LABELS
+    PARENT, RECORD_TYPE_LABELS
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
 from src.data_acquisition.data_retrieval.web_crawler import WebCrawler
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
 from src.data_acquisition.data_retrieval.pdf_processing import PdfProcessor
+
+logger = logging.getLogger(__name__)
 
 
 class DataAcquisitionManager:
@@ -60,7 +64,7 @@ class DataAcquisitionManager:
         This method is responsible for the data acquisition process. It processes the given urls and passes them to the
         web crawler and the web scraper.
         """
-
+        logger.info('Acquiring data: ', urls_df)
         for i in range(iterations):
             urls_df = self._process_urls(urls_df[URL])
 
@@ -72,10 +76,9 @@ class DataAcquisitionManager:
         """
         acquired = pd.DataFrame()
         for url in urls:
-            new_df = self._get_new_urls_from_url(url)
-            self.sources_db.insert_or_update_sources(new_df)
+            new_df = self._process_new_urls_from_url(url)
             acquired = pd.concat([acquired, new_df])
-        acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]]
+        # acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]] TODO
         return acquired
 
     def _update_urls(self, urls: list) -> pd.DataFrame:
@@ -86,8 +89,7 @@ class DataAcquisitionManager:
         """
         acquired = pd.DataFrame()
         for url in urls:
-            new_df = self._get_new_urls_from_url(url)
-            self.sources_db.insert_or_update_sources(new_df)
+            new_df = self._process_new_urls_from_url(url)
             acquired = pd.concat([acquired, new_df])
         acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]]
         return acquired
@@ -100,9 +102,11 @@ class DataAcquisitionManager:
 
         urls_df = self.sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
         if urls_df.empty:
-            return
-        to_scrape = pd.concat(
-            [urls_df[urls_df[CRAWL_ONLY] == 0], self.sources_db.get_all_static_sources_as_dataframe()])
+            to_scrape = self.sources_db.get_all_static_sources_as_dataframe()
+        else:
+            to_scrape = pd.concat(
+                [urls_df[urls_df[CRAWL_ONLY] == 0], self.sources_db.get_all_static_sources_as_dataframe()])
+
         self._scrape_and_update_sources(to_scrape)
         self.acquire_data(urls_df, iterations)
 
@@ -149,22 +153,10 @@ class DataAcquisitionManager:
         """
         for url in to_scrape[URL]:
             ws = WebScraper(url)
-            if self._is_banned(ws, url, []):
+            if self._is_banned(ws, url, []) or not self._content_changed(url, ws):
                 continue
-            type_ids = []
-            for t in ws.get_chunks():
-                content = get_parsed_content_by_function_call(self.agent, url, t)
-                if content:
-                    self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
-                                                      content.record_type)
-                    type_name = content.record_type
-                    type_ids.append(self.sources_db.get_type_id(type_name))
-
-            if type_ids:
-                parent = to_scrape[to_scrape[URL] == url][PARENT].values[0]
-                self.sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT),
-                                                     arrow.now().format(DATE_FORMAT),
-                                                     False, parent, type_ids)
+            parent = to_scrape[to_scrape[URL] == url][PARENT].values[0]
+            self._process_non_crawl_only(url, ws, arrow.now().format(DATE_FORMAT), parent)
 
     @staticmethod
     def _remove_banned(banned: list, extend_df: pd.DataFrame) -> pd.DataFrame:
@@ -194,7 +186,7 @@ class DataAcquisitionManager:
                     self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
                                                       content.record_type)
 
-    def _process_non_crawl_only(self, new_url: str, ws: WebScraper) -> list[[bool, list, str, str]]:
+    def _process_non_crawl_only(self, new_url: str, ws: WebScraper, date_added: str, parent_url: str):
         """
         This method processes the non crawl_only urls. It scrapes the contents of the web page and passes the scraped
         data to the parser.
@@ -206,7 +198,6 @@ class DataAcquisitionManager:
             - DATE_PARSED: str
         """
         types = []
-        encoded_content = ws.get_encoded_content()
         for t in ws.get_chunks():
             content = get_parsed_content_by_function_call(self.agent, new_url, t)
             if not content:
@@ -214,9 +205,10 @@ class DataAcquisitionManager:
             type_id = self.sources_db.get_type_id(content.record_type)
             self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content), content.record_type)
             types.append(type_id)
-        return [False, types, arrow.now().format(DATE_FORMAT), encoded_content]
+        self.sources_db.insert_or_update_source(new_url, date_added, arrow.now().format(DATE_FORMAT), False,
+                                                parent_url, types, ws.get_encoded_content())
 
-    def _get_new_urls_from_url(self, url: str) -> pd.DataFrame:
+    def _process_new_urls_from_url(self, url: str) -> pd.DataFrame:
         """
         This method is responsible for calling the web crawler and getting the new urls, removing the banned urls and
         processing the new urls.
@@ -224,35 +216,39 @@ class DataAcquisitionManager:
         :return: DataFrame with the new urls
         """
         new_urls = self._crawl_url(url, self.sources_db.get_all_parents())
-        if new_urls.empty:
-            return new_urls
-
-        new_urls = self._process_new_urls(new_urls, url)
+        if not new_urls.empty:
+            self._process_new_urls(new_urls, url)
         return new_urls
 
     def _process_new_urls(self, new_urls: pd.DataFrame, parent_url: str) -> pd.DataFrame:
         """ This method processes the new urls and passes them to the web scraper. """
         banned = []
+        new_urls = self._remove_banned(banned, new_urls)
         for new_url in new_urls[URL]:
             if (new_url[-4:] == '.pdf') or (new_url[-4:] == '.PDF'):
                 self._handle_pdf(new_url, parent_url)
                 banned.append(new_url)
                 continue
             ws = WebScraper(new_url)
-            if not self._is_banned(ws, new_url, banned):
+            if not self._is_banned(ws, new_url, banned) and self._content_changed(new_url, ws):
+                date_added = new_urls.loc[new_urls[URL] == new_url, DATE_PARSED].values[0] or arrow.now().format(
+                    DATE_FORMAT)
                 if ws.is_crawl_only():
                     type_name = get_content_type_by_function_call(self.agent, ws.html)
                     if not type_name or type_name not in RECORD_TYPE_LABELS:
                         continue
-                    new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, TYPE_IDS]] = [True, self.sources_db.get_type_id(
-                        type_name)]
+                    self.sources_db.insert_or_update_source(new_url, date_added, None, True, parent_url,
+                                                            [self.sources_db.get_type_id(type_name)])
                 else:
-                    processed = self._process_non_crawl_only(new_url, ws)
-                    for crawl_only, type_id, date_parsed, encoded_content in processed:
-                        new_urls.loc[new_urls[URL] == new_url, [CRAWL_ONLY, DATE_PARSED, TYPE_IDS, ENCODED_CONTENT]] = \
-                            [crawl_only, date_parsed, type_id, encoded_content]
-        new_urls = self._remove_banned(banned, new_urls)
+                    self._process_non_crawl_only(new_url, ws, date_added, parent_url)
+
         return new_urls
+
+    def _content_changed(self, new_url, ws):
+        encoded_content = self.sources_db.get_encoded_content(new_url)
+        if encoded_content and ws.get_encoded_content() == encoded_content:
+            return False
+        return True
 
     @staticmethod
     def _get_json_str_from_content(content: BaseSchema) -> str:
@@ -268,7 +264,7 @@ if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
     # OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPEN_AI_API_KEY"), "gpt-3.5-turbo-1106")
-    agent = LocalApiAgent("http://localhost:8881/v1/", "ollama", "mixtral")
+    agent = LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3:70b")
     # LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3"))
     # LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
     # LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
