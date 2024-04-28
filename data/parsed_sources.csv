@@ -1075,7 +1075,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""header"": ""Element"",
 ""record_type"": ""place"",
 ""brief"": ""An excellent fusion of top-quality meals and original drinks, ideal for a dinner with your partner or friends."",
-""text"": ""Element combines first-rate food and cocktails. Behind its globally inspired menu from local ingredients stands the well-travelled head chef Tomaáš Reger, who has gained culinary experience from around the world. His food is complemented by drinks from champion bartender Jan LiÅ¡ka."",
+""text"": ""Element combines first-rate food and cocktails. Behind its globally inspired menu from local ingredients stands the well-travelled head chef Tomáš Reger, who has gained culinary experience from around the world. His food is complemented by drinks from champion bartender Jan LiÅ¡ka."",
 ""url"": ""elementbrno.com"",
 ""date_fetched"": ""2024-03-31"",
 ""address"": ""Běhounská 7""
@@ -1511,7 +1511,7 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""text"": ""Mama Stella Kostas is a baker who opened his own bakery to make his dream come true. Even though it's a Greek-style business, it sells Italian focaccias, Scandinavian cinnamon rolls, French croissants as well as genuine Greek coffee made in a cezve or freddo espresso or cappuccino. And his sourdough bread is said to be among the best in Brno!"",
 ""url"": ""https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf"",
 ""date_fetched"": ""2024-04-01"",
-""address"": ""Kopeckna 50""
+""address"": ""Kopečná 50""
 }"
 https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""Piknik Box"",
@@ -1520,7 +1520,16 @@ https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustran
 ""text"": ""An original coffee place made of big red containers located in a pleasant, reconstructed park, open year-round. Not far from the bustling city centre, it's a favorite place for lots of locals who enjoy the peaceful atmosphere and the shade of tall trees. Also a great venue for various events and food festivals. Bjornsonuv sad piknikbox.cz"",
 ""url"": ""https://www.piknikbox.cz"",
 ""date_fetched"": ""2024-04-01"",
-""address"": ""piknikbox.cz""
+""address"": ""Björnsonův sad""
+}"
+https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
+""header"": ""William Thomas Artisan Bakery"",
+""record_type"": ""place"",
+""brief"": ""William Thomas Artisan Bakery is a Small artisan bakery from Brno with pastries made exclusively by hand."",
+""text"": ""In their bakery, friends Vilém and Tomáš bake croissants, baguettes, and sourdough bread from scratch all day long. Come watch them work their dough magic or grab a seat on the second floor to enjoy a cup of premium coffee and their specialty “kroláč” – a combination of French croissant and Moravian pie (koláč)."",
+""url"": ""wtbakery.cz"",
+""date_fetched"": ""2024-04-01"",
+""address"": ""Josefská 2""
 }"
 https://www.gotobrno.cz/wp-content/uploads/2023/10/GB23_pruvodce-A6_EN_dvoustrany_web.pdf,1,"{
 ""header"": ""Brno City Guide"",
