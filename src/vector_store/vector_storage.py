@@ -1,8 +1,11 @@
+import json
 import logging
 import os
 from datetime import datetime
 
 import weaviate.classes.config as wcc
+from sqlalchemy import null
+
 from src.agents.api_agent import LlamaApiAgent, ApiAgent
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
@@ -16,9 +19,8 @@ EVENT_SCHEMA_NAME = "EventSchema"
 
 
 class VectorStorage:
-    def __init__(self, agent: ApiAgent):
+    def __init__(self):
         self.client = weaviate.connect_to_local()
-        self.agent = agent
 
     def create_schemas(self):
         self.delete_schema(BASE_SCHEMA_NAME)
@@ -42,11 +44,12 @@ class VectorStorage:
                     obj = eval(d)
                     properties = {
                         "header": obj["header"],
+                        "record_type": obj["record_type"],
                         "brief": obj["brief"],
                         "text": obj["text"],
                         "url": obj["url"],
                         "date_fetched": datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-                        "address": obj["address"] if "address" in obj else ""
+                        "address": obj["address"] if "address" in obj and obj["address"] is not null else "",
                     }
                     batch.add_object(
                         collection=BASE_SCHEMA_NAME,
@@ -70,14 +73,20 @@ class VectorStorage:
             for d in data:
                 try:
                     obj = eval(d)
+                    try:
+                        dates = json.loads(obj["dates"])
+                    except Exception as e:
+                        logger.error(f"Error while parsing dates {obj['dates']}: {e}")
+                        dates = []
                     properties = {
                         "header": obj["header"],
+                        "record_type": obj["record_type"],
                         "brief": obj["brief"],
                         "text": obj["text"],
                         "url": obj["url"],
                         "date_fetched": datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-                        "address": obj["address"] if "address" in obj else "",
-                        "dates": obj["dates"]
+                        "address": obj["address"] if "address" in obj and obj["address"] is not null else "",
+                        "dates": dates
                     }
                     batch.add_object(
                         collection=EVENT_SCHEMA_NAME,
@@ -90,24 +99,6 @@ class VectorStorage:
                 except Exception as e:
                     logger.error(f"Error while importing {d}: {e}")
 
-    def import_base_pdf_from_path(self, pdf_path):
-        """
-        Imports data to Weaviate
-        :param pdf_path: path to the pdf file
-        :return: None
-        """
-        file_name = pdf_path.split("/")[-1]
-        processor = PdfProcessor([pdf_path])
-        chunks = processor.get_chunks()
-        schemas = [get_parsed_content_by_function_call(self.agent, file_name, content) for content in chunks]
-        collection = self.client.collections.get(BASE_SCHEMA_NAME)
-
-        with collection.batch.dynamic() as batch:
-            for s in schemas:
-                batch.add_object(
-                    properties=s,
-                )
-
     def delete_schema(self, name: str):
         self.client.collections.delete(name)
 
@@ -118,8 +109,7 @@ class VectorStorage:
             vectorizer_config=wcc.Configure.Vectorizer.text2vec_transformers(),
             properties=[
                 wcc.Property(name="header", data_type=wcc.DataType.TEXT),
-                wcc.Property(name="record_type", data_type=wcc.DataType.TEXT,
-                             moduleConfig={"text2vec-transformers": {"vectorizePropertyName": "true"}}),
+                wcc.Property(name="record_type", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="brief", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="text", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="url", data_type=wcc.DataType.TEXT),
@@ -135,8 +125,7 @@ class VectorStorage:
             vectorizer_config=wcc.Configure.Vectorizer.text2vec_transformers(),
             properties=[
                 wcc.Property(name="header", data_type=wcc.DataType.TEXT),
-                wcc.Property(name="record_type", data_type=wcc.DataType.TEXT,
-                             moduleConfig={"text2vec-transformers": {"vectorizePropertyName": "true"}}),
+                wcc.Property(name="record_type", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="brief", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="text", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="url", data_type=wcc.DataType.TEXT),
@@ -144,8 +133,8 @@ class VectorStorage:
                 wcc.Property(name="address", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="dates", data_type=wcc.DataType.OBJECT_ARRAY, nested_properties=[
                     wcc.Property(name="date", data_type=wcc.DataType.OBJECT, nested_properties=[
-                        wcc.Property(name="start", data_type=wcc.DataType.TEXT),
-                        wcc.Property(name="end", data_type=wcc.DataType.TEXT)
+                        wcc.Property(name="start", data_type=wcc.DataType.DATE),
+                        wcc.Property(name="end", data_type=wcc.DataType.DATE, optional=True)
                     ])
                 ])])
 
@@ -154,21 +143,6 @@ class VectorStorage:
         Query the 'BaseSchema' collection in Weaviate based on a question.
         :return: The query results
         """
-
-        response = self.client.collections.list_all()
-        print("All collections:")
-        print(response)
-
-        collection = self.client.collections.get(BASE_SCHEMA_NAME)
-        print(collection)
-
-        for item in collection.iterator(
-                include_vector=True
-                # If using named vectors, you can specify ones to include e.g. ['title', 'body'], or True to include all
-        ):
-            print("------------------------------")
-            print(item.properties)
-            print(item.vector)
 
         collection = self.client.collections.get(EVENT_SCHEMA_NAME)
         print(collection)
@@ -181,7 +155,7 @@ class VectorStorage:
             print(item.properties)
             print(item.vector)
 
-        bases = self.client.collections.get(EVENT_SCHEMA_NAME)
+        bases = self.client.collections.get(BASE_SCHEMA_NAME)
 
         response = bases.query.near_text(
             query=query,
@@ -190,19 +164,18 @@ class VectorStorage:
         print(response)
 
 
-def setup_vector_store(agent: ApiAgent):
-    vs = VectorStorage(agent)
+def setup_vector_store():
+    vs = VectorStorage()
     source_db = SourcesDB()
     vs.create_schemas()
     contents = source_db.get_all_parsed_sources_contents_by_type('base')
-    vs.import_stringed_json_base(contents)
+    # vs.import_stringed_json_base(contents)
     contents = source_db.get_all_parsed_sources_contents_by_type('event')
     vs.import_stringed_json_event(contents)
     return vs
 
 
 if __name__ == "__main__":
-    llama_agent = LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
-    vs = setup_vector_store(llama_agent)
-    vs.query_base_schema("Brno")
+    vs = setup_vector_store()
+    vs.query_base_schema("What is famous and nice bakery in Brno?")
     vs.close()
