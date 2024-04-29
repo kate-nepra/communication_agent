@@ -14,8 +14,6 @@ from src.constants import MAX_SIZE
 from src.data_acquisition.constants import SYSTEM, ASSISTANT, USER, ADDRESS, DEFAULT_ADDRESS
 
 logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
-logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 FUNC_ERR = "Error getting function call response: "
 JSON_ERR = "Error getting JSON format response: "
@@ -56,7 +54,7 @@ class ApiAgent(ABC):
         if messages:
             self._add_messages_initially(messages)
         con_messages = [asdict(m) for m in self.messages_storage]
-        response = self._get_base_response(con_messages, functions)
+        response = self.get_base_call_response(con_messages, functions)
         print(f"Response: {response}")
         self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
         return self._handle_response_function_call_errors(functions, module, response, max_retries,
@@ -68,7 +66,7 @@ class ApiAgent(ABC):
         if messages:
             self._add_messages_initially(messages)
         con_messages = [asdict(m) for m in self.messages_storage]
-        response = self._get_forced_response(con_messages, function, function.__name__)
+        response = self.get_forced_call_response(con_messages, function, function.__name__)
         print(f"Response: {response}")
         self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
         return self._handle_response_function_call_errors(function, module, response, max_retries,
@@ -88,7 +86,7 @@ class ApiAgent(ABC):
             self._add_messages_initially(messages)
         messages = [asdict(m) for m in self.messages_storage]
         schema = self._function_to_openai_function_schema(response_model)
-        response = self._get_forced_response(messages, response_model, dict({"name": schema["name"]}))
+        response = self.get_forced_call_response(messages, response_model, dict({"name": schema["name"]}))
         self._add_message(Message(ASSISTANT, str(response)))
         try:
 
@@ -99,7 +97,15 @@ class ApiAgent(ABC):
                                                lambda: self.get_json_format_response(response_model,
                                                                                      max_retries=max_retries - 1))
 
-    def _get_base_response(self, messages, functions):
+    def get_base_response(self, messages):
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            stream=False
+        )
+        return response
+
+    def get_base_call_response(self, messages, functions):
         schemas = [self._function_to_openai_function_schema(f) for f in functions]
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -109,7 +115,7 @@ class ApiAgent(ABC):
         )
         return response
 
-    def _get_forced_response(self, messages, function, function_call):
+    def get_forced_call_response(self, messages, function, function_call):
         schema = [self._function_to_openai_function_schema(function)]
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -130,7 +136,7 @@ class ApiAgent(ABC):
         """
         if response.choices[0].message.function_call is None:
             self._handle_call_exception("", NO_CALL_ERR, max_retries, handling_function)
-        return self._handle_function_call_return(functions, max_retries, module, response)
+        return self._handle_function_call_return(functions, handling_function, max_retries, module, response)
 
     def _handle_call_exception(self, e, error_text, max_retries, handling_function: Callable):
         if max_retries > 0:
@@ -140,7 +146,7 @@ class ApiAgent(ABC):
         logger.error(f"{error_text}{e}. Max retries reached. Skipping.")
         return {}
 
-    def _handle_function_call_return(self, functions, max_retries, module, response):
+    def _handle_function_call_return(self, functions, handling_function, max_retries, module, response):
         """
         Handle the return of the function call
         :param functions: Functions that were chosen from
@@ -154,26 +160,20 @@ class ApiAgent(ABC):
             name, arguments = self._parse_function_call(module, response)
             if not name:
                 self._add_message(Message(USER, "Function name not found. Retry."))
-                return self._handle_function_call_return_errors(functions, max_retries, module)
+                return self._handle_function_call_return_errors(handling_function, max_retries)
             if arguments:
                 return module[name](**arguments)
             return module[name]()
         except Exception as e:
             logger.error(f"Error calling function {name}: {e}")
             self._add_message(Message(USER, f"Error calling function {name}: {e}. Retry."))
-            return self._handle_function_call_return_errors(functions, max_retries, module)
+            return self._handle_function_call_return_errors(handling_function, max_retries)
 
-    def _handle_function_call_return_errors(self, functions, max_retries, module):
-        """
-        Handle the errors in the function call return
-        :param functions: Functions that were chosen from
-        :param max_retries: Number of retries
-        :param module: Module containing the functions
-        :return:
-        """
+    @staticmethod
+    def _handle_function_call_return_errors(handling_function, max_retries):
         if max_retries > 0:
             logger.error("Could not make function call, retrying.")
-            return self.get_function_call(module, functions, max_retries=max_retries - 1)
+            return handling_function()
         logger.error("Could not make function call, max retries reached. Skipping.")
         return None
 
@@ -304,7 +304,7 @@ class ApiAgent(ABC):
                     Message(USER,
                             f"Error: Parameter {arg} required but not found in call for function {function_name}. Retry."))
                 return {}
-            matched_args[arg] = received_arguments[arg]
+            matched_args[arg] = received_arguments[arg] if received_arguments[arg] not in ["None", "null"] else ""
         redundant_args = [arg for arg in received_arguments if arg not in function_params]
         self._add_message(Message(USER, f"Redundant arguments provided: {redundant_args}."))
         return matched_args
@@ -358,7 +358,7 @@ class OpenAIApiAgent(ApiAgent):
         if messages:
             self._add_messages_initially(messages)
         con_messages = [asdict(m) for m in self.messages_storage]
-        response = self._get_forced_response(con_messages, function, dict({"name": function.__name__}))
+        response = self.get_forced_call_response(con_messages, function, dict({"name": function.__name__}))
         print(f"Response: {response}")
         self._add_message(Message(ASSISTANT, str(response.choices[0].message)))
         return self._handle_response_function_call_errors(function, module, response, max_retries,
