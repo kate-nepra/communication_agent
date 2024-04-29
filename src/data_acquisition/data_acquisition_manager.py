@@ -13,7 +13,8 @@ from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
     PARENT, RECORD_TYPE_LABELS
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
-from src.data_acquisition.content_processing.content_parsing import get_parsed_content_by_function_call, BaseSchema
+from src.data_acquisition.content_processing.content_parsing import get_parsed_content_preclassified_function_call, \
+    BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
 from src.data_acquisition.data_retrieval.web_crawler import WebCrawler
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
@@ -139,7 +140,7 @@ class DataAcquisitionManager:
         docs = PdfProcessor(urls).get_chunks_batch()
         for chunks, url in docs:
             for chunk in chunks:
-                content = get_parsed_content_by_function_call(self.agent, url, chunk)
+                content = get_parsed_content_preclassified_function_call(self.agent, url, chunk)
                 if content:
                     self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
                                                       content.record_type)
@@ -181,7 +182,7 @@ class DataAcquisitionManager:
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
             for chunk in chunks:
-                content = get_parsed_content_by_function_call(self.agent, url, chunk)
+                content = get_parsed_content_preclassified_function_call(self.agent, url, chunk)
                 if content:
                     self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
                                                       content.record_type)
@@ -199,7 +200,7 @@ class DataAcquisitionManager:
         """
         types = []
         for t in ws.get_chunks():
-            content = get_parsed_content_by_function_call(self.agent, new_url, t)
+            content = get_parsed_content_preclassified_function_call(self.agent, new_url, t)
             if not content:
                 continue
             type_id = self.sources_db.get_type_id(content.record_type)
@@ -247,6 +248,7 @@ class DataAcquisitionManager:
     def _content_changed(self, new_url, ws):
         encoded_content = self.sources_db.get_encoded_content(new_url)
         if encoded_content and ws.get_encoded_content() == encoded_content:
+            logger.info(f'Content not changed: {new_url}')
             return False
         return True
 
@@ -263,8 +265,9 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-    # OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPEN_AI_API_KEY"), "gpt-3.5-turbo-1106")
+    # OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPENAI_API_KEY"), "gpt-3.5-turbo-1106")
     agent = LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3:70b")
+    # LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3:70b")
     # LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3"))
     # LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
     # LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")

@@ -1,7 +1,12 @@
 import ast
+import logging
 from configparser import ConfigParser
 
 from src.constants import CONSTANTS_CONFIG_PATH
+
+logger = logging.getLogger(__name__)
+FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 _config = ConfigParser()
 _config.read(CONSTANTS_CONFIG_PATH)
@@ -11,8 +16,8 @@ FORCED_TAGS = ['body', 'main', 'html']
 BASE_URL = 'gotobrno'
 ADDRESS = 'address'
 DEFAULT_ADDRESS = 'Brno, Czech Republic'
-DATES_EXAMPLE = '[{"start": "2024-01-11"}, {"start": "2024-01-14 15:00"}, {"start": "2024-01-31 15:00", "end": "2024-02-14"}]'
-DATES_FORMAT_EXAMPLE = 'dates=[{"start": start_date, "end": end_date}]'
+DATES_EXAMPLE = '[{"start": "2024-01-11"}, {"start": "2024-01-14T15:00"}, {"start": "2024-01-31T15:00", "end": "2024-02-14"}]'
+DATES_FORMAT_EXAMPLE = """dates='[{"start": start_date, "end": end_date}]'"""
 
 PLACE = 'place'
 EVENT = 'event'
@@ -20,6 +25,12 @@ ADMINISTRATION = 'administration'
 STATIC = 'static'
 PDF = 'pdf'
 RECORD_TYPE_LABELS = [PLACE, EVENT, ADMINISTRATION, STATIC, PDF]
+
+EVENT_URL_SUBSTRINGS = ['akce', 'event', 'udalosti', 'program', 'kalendar', 'calendar', 'vystav', 'predstaveni',
+                        'oncert', 'porad/']
+PLACE_URL_SUBSTRINGS = ['place', 'taste', 'ochutnejte', 'tour', 'galer', 'galler']
+ADMINISTRATION_URL_SUBSTRINGS = ['expat', 'brnoid', 'en.brno.cz']
+STATIC_URL_SUBSTRINGS = ['wiki']
 
 ROOT = 'root'
 ID = 'id'

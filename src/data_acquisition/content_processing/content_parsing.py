@@ -1,3 +1,4 @@
+import json
 import logging
 from dataclasses import dataclass
 import arrow
@@ -6,7 +7,8 @@ from dotenv import load_dotenv
 from src.agents.api_agent import ApiAgent, Message, LocalApiAgent
 from src.constants import DATE_FORMAT
 from src.data_acquisition.constants import STATIC, PLACE, EVENT, ADMINISTRATION, SYSTEM, USER, DATES_EXAMPLE, \
-    DATES_FORMAT_EXAMPLE, RECORD_TYPE_LABELS
+    DATES_FORMAT_EXAMPLE, RECORD_TYPE_LABELS, EVENT_URL_SUBSTRINGS, PLACE_URL_SUBSTRINGS, ADMINISTRATION_URL_SUBSTRINGS, \
+    STATIC_URL_SUBSTRINGS
 from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
 
 load_dotenv()
@@ -73,8 +75,24 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
                                    messages=messages)
 
 
-def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
-    content_type = get_content_type_by_function_call(agent, content)
+def preclassify_by_url(url: str):
+    for substr in EVENT_URL_SUBSTRINGS:
+        if substr in url:
+            return EVENT
+    for substr in PLACE_URL_SUBSTRINGS:
+        if substr in url:
+            return PLACE
+    for substr in ADMINISTRATION_URL_SUBSTRINGS:
+        if substr in url:
+            return ADMINISTRATION
+    for substr in STATIC_URL_SUBSTRINGS:
+        if substr in url:
+            return STATIC
+    return None
+
+
+def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, content: str):
+    content_type = preclassify_by_url(url) or get_content_type_by_function_call(agent, content)
     logger.info(f"Content type: {content_type}")
     if content_type not in RECORD_TYPE_LABELS:
         logger.error(f"Unknown content type: {content_type}")
@@ -82,11 +100,19 @@ def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, conte
     return get_parsed_by_type(content_type, agent, url, content)
 
 
+def get_parsed_content_preclassified_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
+    content_type = preclassify_by_url(url)
+    if content_type is None or content_type not in RECORD_TYPE_LABELS:
+        logger.error(f"Unknown content type: {content_type}")
+        return get_parsed_content_by_function_call(agent, url, content)
+    return get_parsed_by_type(content_type, agent, url, content)
+
+
 def get_parsed_by_type(record_type, agent: ApiAgent, url: str, content: str) -> BaseSchema:
     def get_params_base(header: str, text: str, brief: str, address: str) -> BaseSchema:
         """This function encapsulates the process of creating a BaseSchema object.
         :param header: The header of the entity.
-        :param text: The descriptive text of the entity (for example a plot of a theatrical performance for an event, insurance application process for administration, or a menu of a restaurant for a place) must be assigned it as the text parameter. Do NOT SHORTEN it, do NOT OMIT any important information.
+        :param text: The descriptive text of the entity (for example insurance application process, or a menu of a restaurant). Do NOT SHORTEN it, do NOT OMIT any important information.
         :param brief: The sum up of the text no longer than 3 sentences.
         :param address: The address of the entity, default: "Brno, Czech Republic".
         :return: BaseSchema object."""
@@ -95,18 +121,19 @@ def get_parsed_by_type(record_type, agent: ApiAgent, url: str, content: str) -> 
     def get_params_event(header: str, text: str, brief: str, address: str, dates: str) -> BaseSchema:
         """This function encapsulates the process of creating an EventSchema object.
         :param header: The header of the entity.
-        :param text: The descriptive text of the entity (for example a plot of a theatrical performance for an event, insurance application process for administration, or a menu of a restaurant for a place) must be assigned it as the text parameter. Do NOT SHORTEN it, do NOT OMIT any important information.
+        :param text: The descriptive text of the entity (for example a plot of a theatrical performance). Do NOT SHORTEN it, do NOT OMIT any important information.
         :param brief: The sum up of the text no longer than 3 sentences.
         :param address: The address of the entity, default: "Brno, Czech Republic".
-        :param dates: The date(s) of the event as list of durations. The duration format is a stringified JSON object {DATES_FORMAT_EXAMPLE} with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time. For example {DATES_EXAMPLE}.
+        :param dates: The date(s) of the event as list of durations. The duration format is a STRINGIFIED JSON object dates='[{"start": start_date, "end": end_date}]' with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the 'YYYY-MM-DDTHH:mm:ss' format, where 'YYYY-MM-DD' is for date, and format 'HH:mm:ss' for time. For example '[{"start": "2024-01-11"}, {"start": "2024-01-14T15:00"}, {"start": "2024-01-31T15:00", "end": "2024-02-14"}]'.
         :return: EventSchema object."""
+
         return EventSchema(header, record_type, brief, text, url, arrow.now().format(DATE_FORMAT), address, dates)
 
     def _get_messages(record_type) -> list[Message]:
         event_specific = ""
         if record_type == EVENT:
-            event_specific = f"""
-For an event entity: assign date(s) of the event as list of durations. The duration format is a stringified JSON object {DATES_FORMAT_EXAMPLE} with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time. For example {DATES_EXAMPLE}."""
+            event_specific = f""" 
+For an event entity: assign date(s) of the event as list of durations. The duration format is a STRINGIFIED JSON object {DATES_FORMAT_EXAMPLE} with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the 'YYYY-MM-DDTHH:mm:ss' format, where 'YYYY-MM-DD' is for date, and format 'HH:mm:ss' for time For example {DATES_EXAMPLE}."""
 
         system_message = f"""You are a smart processor of web-scraped text. Follow these instructions: 
  1. Go through the text and extract information from the article, translate to English if not in English. Use plain text. 
@@ -114,7 +141,7 @@ For an event entity: assign date(s) of the event as list of durations. The durat
     Use provided or generate a header more fitting the found text. 
     The descriptive text of the entity (for example a plot of a theatrical performance for an event, insurance application process for administration, or a menu of a restaurant for a place) must be assigned it as the text parameter. Do NOT SHORTEN it, do NOT OMIT any important information. 
     Create a brief which is a sum up of the text no longer than 3 sentences. 
-    If you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required. {event_specific}
+    If you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required.{event_specific}
  3. End with function call response of provided function schema in valid JSON format. Do NOT add any additional text."""
 
         return [Message(role=SYSTEM, content=system_message),
