@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import os
 
 import requests
 from llama_index_client import Document
@@ -9,6 +11,8 @@ from dotenv import load_dotenv
 from src.data_acquisition.data_retrieval.constants import PDF_FOLDER
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 def batch_scrape_pdfs(urls: list[str]):
@@ -28,7 +32,7 @@ class PdfProcessor:
 
     def __init__(self, urls: list[str]):
         self.urls = urls
-        self.destinations = batch_scrape_pdfs(urls)
+        self.destinations = batch_scrape_pdfs(urls) if urls else []
 
     def get_cleaned_md(self, text) -> str:
         """Removes empty lines, lines with only numbers, and duplicate lines from the markdown file. Also removes lines
@@ -123,3 +127,26 @@ class PdfProcessor:
         for i in range(len(self.urls)):
             md = mds[i]
             yield self._split_md_into_chunks(md, MAX_SIZE), self.urls[i]
+
+    def process_pdfs_from_folder(self, folder_path: str) -> tuple[list[str], str]:
+        """Downloads the pdfs from the given folder and processes them."""
+        file_paths = [folder_path + '/' + file for file in os.listdir(folder_path)]
+        for file_path in file_paths:
+            try:
+                return self.process_pdf_from_path(file_path)
+            except Exception as e:
+                logger.error(f"Error processing pdf from path: {file_path}. Error: {e}")
+
+    def process_pdf_from_path(self, path: str) -> tuple[list[str], str]:
+        """Processes the pdf from the given path."""
+        self.destinations = [path]
+        return self.get_chunks()
+
+
+if __name__ == '__main__':
+    path = '/home/rinaen/PycharmProjects/communication_agent/pdfs'
+    pp = PdfProcessor([])
+    for chunks, url in pp.process_pdfs_from_folder(path):
+        print(chunks)
+        print(url)
+        print()
