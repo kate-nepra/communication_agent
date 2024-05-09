@@ -1,65 +1,38 @@
-import json
 import logging
-from dataclasses import dataclass
-import arrow
 from dotenv import load_dotenv
 
-from src.agents.api_agent import ApiAgent, Message, LocalApiAgent
-from src.constants import DATE_FORMAT
+from src.agents.api_agent import ApiAgent, Message
+from src.agents.message import SystemMessage, UserMessage
+from src.constants import TODAY
 from src.data_acquisition.constants import STATIC, PLACE, EVENT, ADMINISTRATION, SYSTEM, USER, DATES_EXAMPLE, \
-    DATES_FORMAT_EXAMPLE, RECORD_TYPE_LABELS, EVENT_URL_SUBSTRINGS, PLACE_URL_SUBSTRINGS, ADMINISTRATION_URL_SUBSTRINGS, \
-    STATIC_URL_SUBSTRINGS
-from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
+    DATES_FORMAT_EXAMPLE, RECORD_TYPE_LABELS
+from src.data_acquisition.content_processing.content_classification import get_content_type_preclassified_function_call, \
+    preclassify_by_url
+from src.data_acquisition.schemas import BaseSchema, EventSchema
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Duration:
-    """ Format for event duration. Field "end" is optional, it is used for period of time (that are two dates from-to). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time."""
-    start: str
-    end: str = None
-
-
-@dataclass
-class BaseSchema():
-    """ Base schema for all entities """
-    header: str
-    record_type: str
-    brief: str
-    text: str
-    url: str
-    date_fetched: str
-    address: str = None
-
-
-@dataclass
-class EventSchema(BaseSchema):
-    """ Event schema for events """
-    dates: list = None
-
-
 def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
     def add_place(header: str, text: str, brief: str, address: str) -> BaseSchema:
         """Call this function if you encounter entity that is a place or destination in or near Brno city, such as restaurant, café, bar, bakery, museum, tour, greenery, church, castle, university, kino, theatre or similar."""
-        return BaseSchema(header, PLACE, brief, text, url, arrow.now().format(DATE_FORMAT), address)
+        return BaseSchema(header, PLACE, brief, text, url, TODAY, address)
 
     def add_event(header: str, text: str, brief: str, address: str, dates: str) -> BaseSchema:
         """Call this function if you encounter entity that is an event such as concert, exhibition, celebration, festival, sports match, theatrical performance or similar."""
-        return EventSchema(header, EVENT, brief, text, url, arrow.now().format(DATE_FORMAT), address, dates)
+        return EventSchema(header, EVENT, brief, text, url, TODAY, address, dates)
 
     def add_administration(header: str, text: str, brief: str, address: str) -> BaseSchema:
         """Call this function if you encounter entity that is administrative information such as Municipal office, business, authorities, insurance, social Care, vehicle registration, taxes, fees, information for expats, school system, residence, ID cards or similar."""
-        return BaseSchema(header, ADMINISTRATION, brief, text, url, arrow.now().format(DATE_FORMAT),
+        return BaseSchema(header, ADMINISTRATION, brief, text, url, TODAY,
                           address)
 
     def add_static(header: str, text: str, brief: str) -> BaseSchema:
         """Call this function if you encounter entity that contains blog post, an article from wikipedia or information about well-known personality connected with Brno that is not likely to change in next 5 years. This entity does not contain any information about places in Brno, events or administrative."""
-        return BaseSchema(header, STATIC, brief, text, url, arrow.now().format(DATE_FORMAT))
+        return BaseSchema(header, STATIC, brief, text, url, TODAY)
 
-    messages = [Message(role=SYSTEM,
-                        content=f"""You are a smart processor of web-scraped text. Follow these instructions: 
+    messages = [SystemMessage(f"""You are a smart processor of web-scraped text. Follow these instructions: 
  1. Go through the text and extract information from the article, translate to English if not in English. Use plain text. 
  2. Use the function with the most fitting description, pass parameters as described in the following steps:
     Use provided or generate a header more fitting the found text. 
@@ -67,32 +40,15 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
     Create a brief which is a sum up of the text no longer than 3 sentences. 
     For non-static entities only: if you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required. 
     For an event entity: assign date(s) of the event as list of durations. The duration format is a stringified JSON object {DATES_FORMAT_EXAMPLE} with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time. For example {DATES_EXAMPLE}. 
- 3. End with the function call response in valid JSON format., do NOT add any additional text."""),
-                Message(role=USER,
-                        content=f"""Here is the text to process ```{content}```""")]
+ 3. End with the function call response in valid JSON format, do NOT add any additional text."""),
+                UserMessage(f"""Here is the text to process ```{content}```""")]
 
     return agent.get_function_call(locals(), [add_place, add_administration, add_static, add_event],
                                    messages=messages)
 
 
-def preclassify_by_url(url: str):
-    for substr in EVENT_URL_SUBSTRINGS:
-        if substr in url:
-            return EVENT
-    for substr in PLACE_URL_SUBSTRINGS:
-        if substr in url:
-            return PLACE
-    for substr in ADMINISTRATION_URL_SUBSTRINGS:
-        if substr in url:
-            return ADMINISTRATION
-    for substr in STATIC_URL_SUBSTRINGS:
-        if substr in url:
-            return STATIC
-    return None
-
-
 def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, content: str):
-    content_type = preclassify_by_url(url) or get_content_type_by_function_call(agent, content)
+    content_type = get_content_type_preclassified_function_call(agent, url, content)
     logger.info(f"Content type: {content_type}")
     if content_type not in RECORD_TYPE_LABELS:
         logger.error(f"Unknown content type: {content_type}")
@@ -103,7 +59,7 @@ def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, conte
 def get_parsed_content_preclassified_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
     content_type = preclassify_by_url(url)
     if content_type is None or content_type not in RECORD_TYPE_LABELS:
-        logger.error(f"Unknown content type: {content_type}")
+        logger.info(f"Could not preclassify content type")
         return get_parsed_content_by_function_call(agent, url, content)
     return get_parsed_by_type(content_type, agent, url, content)
 
@@ -116,7 +72,7 @@ def get_parsed_by_type(record_type, agent: ApiAgent, url: str, content: str) -> 
         :param brief: The sum up of the text no longer than 3 sentences.
         :param address: The address of the entity, default: "Brno, Czech Republic".
         :return: BaseSchema object."""
-        return BaseSchema(header, record_type, brief, text, url, arrow.now().format(DATE_FORMAT), address)
+        return BaseSchema(header, record_type, brief, text, url, TODAY, address)
 
     def get_params_event(header: str, text: str, brief: str, address: str, dates: str) -> BaseSchema:
         """This function encapsulates the process of creating an EventSchema object.
@@ -127,7 +83,7 @@ def get_parsed_by_type(record_type, agent: ApiAgent, url: str, content: str) -> 
         :param dates: The date(s) of the event as list of durations. The duration format is a STRINGIFIED JSON object dates='[{"start": start_date, "end": end_date}]' with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the 'YYYY-MM-DDTHH:mm:ss' format, where 'YYYY-MM-DD' is for date, and format 'HH:mm:ss' for time. For example '[{"start": "2024-01-11"}, {"start": "2024-01-14T15:00"}, {"start": "2024-01-31T15:00", "end": "2024-02-14"}]'.
         :return: EventSchema object."""
 
-        return EventSchema(header, record_type, brief, text, url, arrow.now().format(DATE_FORMAT), address, dates)
+        return EventSchema(header, record_type, brief, text, url, TODAY, address, dates)
 
     def _get_messages(record_type) -> list[Message]:
         event_specific = ""
@@ -144,8 +100,8 @@ For an event entity: assign date(s) of the event as list of durations. The durat
     If you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required.{event_specific}
  3. End with function call response of provided function schema in valid JSON format. Do NOT add any additional text."""
 
-        return [Message(role=SYSTEM, content=system_message),
-                Message(role=USER, content=f"""Here is the text to process ```{content}```""")]
+        return [SystemMessage(content=system_message),
+                UserMessage(f"""Here is the text to process ```{content}```""")]
 
     return agent.get_forced_function_call(locals(), get_params_event if record_type == EVENT else get_params_base,
                                           messages=_get_messages(record_type))
