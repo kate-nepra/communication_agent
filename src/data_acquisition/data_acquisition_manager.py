@@ -2,23 +2,22 @@ import json
 import logging
 import os
 import time
-from typing import Tuple, List
 
 import arrow
 import pandas as pd
 from dotenv import load_dotenv
 
 from src.agents.api_agent import ApiAgent, LlamaApiAgent, LocalApiAgent, OpenAIApiAgent
-from src.constants import DATE_FORMAT
+from src.constants import DATE_FORMAT, TODAY, LOCAL_KEY, LOCAL_URL
 from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
     PARENT, RECORD_TYPE_LABELS
-from src.data_acquisition.content_processing.content_classification import get_content_type_by_function_call
+from src.data_acquisition.content_processing.content_classification import get_content_type_preclassified_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_preclassified_function_call, \
     BaseSchema
 from src.data_acquisition.sources_store.sourcesdb import SourcesDB
 from src.data_acquisition.data_retrieval.web_crawler import WebCrawler
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
-from src.data_acquisition.data_retrieval.pdf_processing import PdfProcessor
+from src.data_acquisition.data_retrieval.pdf_processor import PdfProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +115,7 @@ class DataAcquisitionManager:
         This method checks if the given url is banned based on the content of the web page.
         """
         if not ws.does_html_contain_substrs(CONTENT_SUBSTRINGS):
-            self.sources_db.add_or_update_banned_source(new_url, arrow.now().format(DATE_FORMAT))
+            self.sources_db.add_or_update_banned_source(new_url, TODAY)
             banned.append(new_url)
             return True
         return False
@@ -125,7 +124,7 @@ class DataAcquisitionManager:
         """
         This method updates the existing urls in the sources' database. It sets the date_added to current date.
         """
-        self.sources_db.update_existing_urls_date(existing_urls, arrow.now().format(DATE_FORMAT))
+        self.sources_db.update_existing_urls_date(existing_urls, TODAY)
 
     def update_by_type_name(self, type_name: str) -> None:
         if type_name == PDF:
@@ -144,7 +143,7 @@ class DataAcquisitionManager:
                 if content:
                     self.sources_db.add_parsed_source(url, self._get_json_str_from_content(content),
                                                       content.record_type)
-        self.sources_db.update_existing_urls_date(urls, arrow.now().format(DATE_FORMAT))
+        self.sources_db.update_existing_urls_date(urls, TODAY)
 
     def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
         """
@@ -157,7 +156,7 @@ class DataAcquisitionManager:
             if self._is_banned(ws, url, []) or not self._content_changed(url, ws):
                 continue
             parent = to_scrape[to_scrape[URL] == url][PARENT].values[0]
-            self._process_non_crawl_only(url, ws, arrow.now().format(DATE_FORMAT), parent)
+            self._process_non_crawl_only(url, ws, TODAY, parent)
 
     @staticmethod
     def _remove_banned(banned: list, extend_df: pd.DataFrame) -> pd.DataFrame:
@@ -177,7 +176,7 @@ class DataAcquisitionManager:
         """ This method handles the pdf urls. It adds the pdf url to the sources' database. Only pdfs from
         gotobrno are allowed."""
         if BASE_URL in url:
-            self.sources_db.add_or_update_source(url, arrow.now().format(DATE_FORMAT), arrow.now().format(DATE_FORMAT),
+            self.sources_db.add_or_update_source(url, TODAY, TODAY,
                                                  None, parent_url, [int(self.sources_db.get_type_id(PDF))])
             pdf_parser = PdfProcessor([url])
             chunks, url = pdf_parser.get_chunks()
@@ -206,7 +205,7 @@ class DataAcquisitionManager:
             type_id = self.sources_db.get_type_id(content.record_type)
             self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content), content.record_type)
             types.append(type_id)
-        self.sources_db.insert_or_update_source(new_url, date_added, arrow.now().format(DATE_FORMAT), False,
+        self.sources_db.insert_or_update_source(new_url, date_added, TODAY, False,
                                                 parent_url, types, ws.get_encoded_content())
 
     def _process_new_urls_from_url(self, url: str) -> pd.DataFrame:
@@ -235,7 +234,7 @@ class DataAcquisitionManager:
                 date_added = new_urls.loc[new_urls[URL] == new_url, DATE_PARSED].values[0] or arrow.now().format(
                     DATE_FORMAT)
                 if ws.is_crawl_only():
-                    type_name = get_content_type_by_function_call(self.agent, ws.html)
+                    type_name = get_content_type_preclassified_function_call(self.agent, ws.url, ws.html)
                     if not type_name or type_name not in RECORD_TYPE_LABELS:
                         continue
                     self.sources_db.insert_or_update_source(new_url, date_added, None, True, parent_url,
@@ -265,15 +264,14 @@ class DataAcquisitionManager:
 if __name__ == '__main__':
     load_dotenv()
     sources = SourcesDB()
-    # OpenAIApiAgent("https://api.openai.com/v1", os.getenv("OPENAI_API_KEY"), "gpt-3.5-turbo-1106")
-    agent = LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3:70b")
-    # LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3:70b")
-    # LocalApiAgent("http://localhost:8881/v1/", "ollama", "llama3"))
+    # OpenAIApiAgent(OPENAI_KEY, os.getenv("OPENAI_API_KEY"), "gpt-3.5-turbo-1106")
+    agent = LocalApiAgent(LOCAL_URL, LOCAL_KEY, "mixtral")
+    # LocalApiAgent("http://localhost:8881/v1/", LOCAL_KEY, "llama3"))
     # LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
-    # LocalApiAgent("http://localhost:11434/v1/", "ollama", "mistral")
+    # LocalApiAgent("http://localhost:11434/v1/", LOCAL_KEY, "mistral")
     dam = DataAcquisitionManager(sources, agent)
     st = time.time()
     print('start time:', time.strftime("%H:%M:%S", time.gmtime(st)))
-    dam.initial_data_acquisition(3)
+    dam.initial_data_acquisition(2)
     elapsed_time = time.time() - st
     print('Execution time:', time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
