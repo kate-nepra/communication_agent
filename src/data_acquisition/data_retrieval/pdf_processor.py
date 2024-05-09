@@ -1,18 +1,17 @@
 import asyncio
 import logging
 import os
-
+from markdown import markdown
 import requests
 from llama_index_client import Document
 from src.constants import MAX_SIZE
 from llama_parse import LlamaParse
 from dotenv import load_dotenv
 
+from src.data_acquisition.constants import logger
 from src.data_acquisition.data_retrieval.constants import PDF_FOLDER
 
 load_dotenv()
-
-logger = logging.getLogger(__name__)
 
 
 def batch_scrape_pdfs(urls: list[str]):
@@ -91,6 +90,9 @@ class PdfProcessor:
             if len(chunks[i]) > max_size:
                 while len(chunks[i]) > max_size:
                     last_newline = chunks[i][:max_size].rfind('\n')
+                    if last_newline == -1:
+                        last_whitespace = chunks[i][:max_size].rfind(' ')
+                        last_newline = last_whitespace if last_whitespace != -1 else max_size
                     chunks[i] = chunks[i][last_newline:]
                     chunks.append(chunks[i][:last_newline])
         return [chunk for chunk in chunks if len(chunk) > 100]
@@ -140,13 +142,6 @@ class PdfProcessor:
     def process_pdf_from_path(self, path: str) -> tuple[list[str], str]:
         """Processes the pdf from the given path."""
         self.destinations = [path]
+        self.urls = [path.split('/')[-1]]
+        logger.info(f"Processing pdf: {path}")
         return self.get_chunks()
-
-
-if __name__ == '__main__':
-    path = '/home/rinaen/PycharmProjects/communication_agent/pdfs'
-    pp = PdfProcessor([])
-    for chunks, url in pp.process_pdfs_from_folder(path):
-        print(chunks)
-        print(url)
-        print()
