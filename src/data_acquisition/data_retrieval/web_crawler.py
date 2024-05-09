@@ -1,6 +1,6 @@
 import arrow
 
-from src.constants import DATE_FORMAT
+from src.constants import TODAY
 from src.data_acquisition.constants import URL, DATE_ADDED, PARENT, CRAWL_ONLY
 from src.data_acquisition.data_retrieval.constants import BANNED_SUBSTRINGS
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
@@ -53,7 +53,7 @@ class WebCrawler:
 
     def _create_urls_dict(self, urls) -> list[dict]:
         """Returns a list of dictionaries with the urls and the date they were added."""
-        date = arrow.now().format(DATE_FORMAT)
+        date = TODAY
         return [{URL: url, DATE_ADDED: date, PARENT: self._get_parent_part_url(url)} for url in urls]
 
     def _clean_url_list(self, urls: list[str]) -> list[str]:

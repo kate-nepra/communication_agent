@@ -117,7 +117,7 @@ class WebScraper:
         return soup
 
     def _decompose_patterns(self, soup):
-        decompose_patterns = [".*header.*", ".*navigation.*", ".*menu.*", ".*navbox.*", ".*edit.*",
+        decompose_patterns = [".*header.*", ".*navigation.*", ".*menu.*", ".*navbox.*", ".*edit-",
                               ".*cite.*"]
         combined_d_pattern = "|".join(DECOMPOSE_PATTERNS_BASE + WIKI_SPECIFIC + decompose_patterns)
         soup = self._apply_decompose_pattern(soup, combined_d_pattern)
@@ -499,12 +499,14 @@ if __name__ == '__main__':
         # 'https://en.wikipedia.org/wiki/Brno')
         # 'https://www.brno.cz/mestske-casti-prehled')
         # 'https://en.brno.cz/')
-        'https://www.ndbrno.cz/en/program/tri-sestry-3/')
+        'https://en.wikipedia.org/wiki/Brno')
     print('URL:', ws.url)
     # print('Description:', ws.get_description())
     # print('Title:', ws.get_title())
     print('Main header:', ws.get_main_header())
     chunks = ws.get_chunks()
+    print(len(ws.get_text_from_html(ws.get_cleaned_html())))
+    print(len(ws.get_encoded_content()))
     for chunk in chunks:
         print('-------------------------------------------------------------------')
         print('Length:', len(chunk))
