@@ -26,11 +26,11 @@ STATIC = 'static'
 PDF = 'pdf'
 RECORD_TYPE_LABELS = [PLACE, EVENT, ADMINISTRATION, STATIC, PDF]
 
-EVENT_URL_SUBSTRINGS = ['akce', 'event', 'udalosti', 'program', 'kalendar', 'calendar', 'vystav', 'predstaveni',
+EVENT_URL_SUBSTRINGS = ['akce', 'event', 'udalosti', 'program', 'alendar', 'vystav', 'predstaveni',
                         'oncert', 'porad/']
 PLACE_URL_SUBSTRINGS = ['place', 'taste', 'ochutnejte', 'tour', 'galer', 'galler']
-ADMINISTRATION_URL_SUBSTRINGS = ['expat', 'brnoid', 'en.brno.cz']
-STATIC_URL_SUBSTRINGS = ['wiki']
+ADMINISTRATION_URL_SUBSTRINGS = ['expat', 'brnoid', 'en.brno.cz', 'damenavas']
+STATIC_URL_SUBSTRINGS = ['wiki', 'projekt']
 
 ROOT = 'root'
 ID = 'id'
