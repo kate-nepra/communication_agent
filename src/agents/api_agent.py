@@ -18,6 +18,7 @@ from src.data_acquisition.constants import ADDRESS, DEFAULT_ADDRESS
 logger = logging.getLogger(__name__)
 API_ERR = "api_error"
 CONN_ERR = "Connection error"
+RECURSION_ERR = "recursion"
 FUNC_ERR = "Error getting function call response: "
 JSON_ERR = "Error getting JSON format response: "
 NO_CALL_ERR = "No function call found in the response."
@@ -165,6 +166,8 @@ class ApiAgent(ABC):
         return self._handle_function_call_return(handling_function, max_retries, module, response)
 
     def _handle_call_exception(self, e, error_text, max_retries, handling_function: Callable):
+        if RECURSION_ERR in str(e):
+            return {}
         if API_ERR in str(e) or CONN_ERR in str(e):
             time.sleep(10)
             max_retries += 1
@@ -194,7 +197,7 @@ class ApiAgent(ABC):
             return module[name]()
         except RecursionError as e:
             logger.error(f"Error: {e}")
-            return self._handle_function_call_return_errors(handling_function, 0)
+            return
         except Exception as e:
             logger.error(f"Error calling function {name}: {e}")
             self._add_message(UserMessage(f"Error calling function {name}: {e}. Retry."))
@@ -424,9 +427,6 @@ class LocalApiAgent(ApiAgent):
         self._add_message(AssistantMessage(str(response)))
         try:
             return dict(response)
-        except RecursionError as e:
-            logger.error(f"Error: {e}")
-            return {}
         except Exception as e:
             return self._handle_call_exception(e, JSON_ERR, max_retries,
                                                lambda: self.get_json_format_response(response_model,
@@ -446,9 +446,6 @@ class LocalApiAgent(ApiAgent):
             names_and_descriptions = [self._get_func_name_and_descr_dict(f) for f in functions]
             name, model = self._get_func_name_and_model(module, functions, names_and_descriptions, max_retries,
                                                         messages)
-        except RecursionError as e:
-            logger.error(f"Error: {e}")
-            return
         except Exception as e:
             logger.error(f"Error choosing function and schema: {e}")
             return
