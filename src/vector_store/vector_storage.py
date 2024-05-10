@@ -115,7 +115,7 @@ class VectorStorage:
             description="Places and all basic info about Brno.",
             vectorizer_config=wcc.Configure.Vectorizer.text2vec_transformers(),
             reranker_config=wcc.Configure.Reranker.cohere(),
-            vector_index_config=Configure.VectorIndex.hnsw(
+            vector_index_config=Configure.VectorIndex.dynamic(
                 distance_metric=VectorDistances.COSINE
             ),
             properties=[
@@ -124,7 +124,7 @@ class VectorStorage:
                 wcc.Property(name="brief", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="text", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="url", data_type=wcc.DataType.TEXT),
-                wcc.Property(name="date_fetched", data_type=wcc.DataType.DATE),
+                wcc.Property(name="date_fetched", data_type=wcc.DataType.DATE, skip_indexing=True),
                 wcc.Property(name="address", data_type=wcc.DataType.TEXT),
             ]
         )
@@ -136,7 +136,7 @@ class VectorStorage:
             description="Culture events, concerts, festivals etc.",
             vectorizer_config=wcc.Configure.Vectorizer.text2vec_transformers(),
             reranker_config=wcc.Configure.Reranker.cohere(),
-            vector_index_config=Configure.VectorIndex.hnsw(
+            vector_index_config=Configure.VectorIndex.dynamic(
                 distance_metric=VectorDistances.COSINE
             ),
             properties=[
@@ -145,10 +145,10 @@ class VectorStorage:
                 wcc.Property(name="brief", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="text", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="url", data_type=wcc.DataType.TEXT),
-                wcc.Property(name="date_fetched", data_type=wcc.DataType.DATE),
+                wcc.Property(name="date_fetched", data_type=wcc.DataType.DATE, skip_indexing=True),
                 wcc.Property(name="address", data_type=wcc.DataType.TEXT),
                 wcc.Property(name="dates", data_type=wcc.DataType.OBJECT_ARRAY, nested_properties=[
-                    wcc.Property(name="date", data_type=wcc.DataType.OBJECT, nested_properties=[
+                    wcc.Property(name="date", data_type=wcc.DataType.OBJECT, skip_indexing=True, nested_properties=[
                         wcc.Property(name="start", data_type=wcc.DataType.DATE),
                         wcc.Property(name="end", data_type=wcc.DataType.DATE, optional=True)
                     ])
@@ -270,8 +270,8 @@ def setup_vector_store():
 
 
 if __name__ == "__main__":
-    # vs = setup_vector_store()
-    vs = VectorStorage()
+    vs = setup_vector_store()
+    # vs = VectorStorage()
     vs.get_all_items(EVENT_SCHEMA_NAME)
     print("--------------------------------------------------------------------")
     vs.query_event_schema_hybrid("design", ["2024-05"])
