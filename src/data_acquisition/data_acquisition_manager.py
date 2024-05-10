@@ -152,8 +152,9 @@ class DataAcquisitionManager:
         :return:
         """
         for url in to_scrape[URL]:
+            date_parsed = to_scrape[to_scrape[URL] == url][DATE_PARSED].values[0]
             ws = WebScraper(url)
-            if self._is_banned(ws, url, []) or not self._content_changed(url, ws):
+            if self._is_banned(ws, url, []) or (not self._content_changed(url, ws) and date_parsed):
                 continue
             parent = to_scrape[to_scrape[URL] == url][PARENT].values[0]
             self._process_non_crawl_only(url, ws, TODAY, parent)
@@ -198,14 +199,16 @@ class DataAcquisitionManager:
             - DATE_PARSED: str
         """
         types = []
+        date_parsed = None
         for t in ws.get_chunks():
             content = get_parsed_content_preclassified_function_call(self.agent, new_url, t)
             if not content:
                 continue
+            date_parsed = TODAY
             type_id = self.sources_db.get_type_id(content.record_type)
             self.sources_db.add_parsed_source(new_url, self._get_json_str_from_content(content), content.record_type)
             types.append(type_id)
-        self.sources_db.insert_or_update_source(new_url, date_added, TODAY, False,
+        self.sources_db.insert_or_update_source(new_url, date_added, date_parsed, False,
                                                 parent_url, types, ws.get_encoded_content())
 
     def _process_new_urls_from_url(self, url: str) -> pd.DataFrame:
