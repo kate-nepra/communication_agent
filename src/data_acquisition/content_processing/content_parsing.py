@@ -37,7 +37,7 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
  2. Use the function with the most fitting description, pass parameters as described in the following steps:
     Use provided or generate a header more fitting the found text. 
     The descriptive text of the entity (for example a plot of a theatrical performance for an event, insurance application process for administration, or a menu of a restaurant for a place) must be assigned it as the text parameter. Do NOT SHORTEN it, do NOT OMIT any important information. 
-    Create a brief which is a sum up of the text no longer than 3 sentences. 
+    Create a brief which is a keyword-extending summary up of the text no longer than 2 sentences. 
     For non-static entities only: if you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required. 
     For an event entity: assign date(s) of the event as list of durations. The duration format is a stringified JSON object {DATES_FORMAT_EXAMPLE} with fields "start" and "end". Field "end" is optional, it is used for period of time (that are two dates from-to, like startdate-enddate, for example 31 jan–14 feb 2024). Use the format YYYY-MM-DD for date, and format HH:MM:SS for time. For example {DATES_EXAMPLE}. 
  3. End with the function call response in valid JSON format, do NOT add any additional text."""),
@@ -96,7 +96,7 @@ For an event entity: assign date(s) of the event as list of durations. The durat
  2. Fill in the parameters of the schema as follows:
     Use provided or generate a header more fitting the found text. 
     The descriptive text of the entity (for example a plot of a theatrical performance for an event, insurance application process for administration, or a menu of a restaurant for a place) must be assigned it as the text parameter. Do NOT SHORTEN it, do NOT OMIT any important information. 
-    Create a brief which is a sum up of the text no longer than 3 sentences. 
+    Create a brief which is a keyword-extending summary up of the text no longer than 2 sentences. 
     If you encounter address of a place (such as address of a municipal office for administration or address of concert-hall for an event), assign is as address. Fill in "Brno, Czech Republic" if the specific address not found but required.{event_specific}
  3. End with function call response of provided function schema in valid JSON format. Do NOT add any additional text."""
 
