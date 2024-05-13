@@ -18,7 +18,7 @@ def batch_scrape_pdfs(urls: list[str]):
     return [scrape_pdf(url, PDF_FOLDER) for url in urls]
 
 
-def scrape_pdf(url, destination_folder) -> str:
+def scrape_pdf(url: str, destination_folder: str = PDF_FOLDER) -> str:
     """Downloads the pdf from the given url and saves it to the destination folder"""
     destination = destination_folder + '/' + url.split('/')[-1]
     response = requests.get(url)
