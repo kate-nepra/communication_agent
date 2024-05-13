@@ -75,7 +75,7 @@ class VectorStorage:
             counter = 0
             for d in data:
                 try:
-                    obj = eval(d)
+                    obj = eval(repair_json(d))
                     try:
                         dates = json.loads(repair_json(obj["dates"]))
                         dates_str = self._get_dates_str(dates)
@@ -83,6 +83,7 @@ class VectorStorage:
                         logger.error(f"Error while parsing dates {obj['dates']}: {e}")
                         dates = []
                         obj["text"] = obj["text"] + " date: " + obj["dates"]
+                        dates_str = str(obj["dates"])
                     properties = {
                         "header": obj["header"],
                         "record_type": obj["record_type"],
@@ -156,38 +157,70 @@ class VectorStorage:
                 wcc.Property(name="dates_str", data_type=wcc.DataType.TEXT, skip_indexing=True)])
 
     def get_all_items(self, collection_name: str):
-        collection = self.client.collections.get(collection_name)
-        print(collection)
+        return self.client.collections.get(collection_name)
 
-        for item in collection.iterator(
-                include_vector=True
-        ):
-            print("------------------------------")
-            print(item.properties)
-            print(item.vector)
-
-    def query_base_schema_bm25(self, query: str):
+    def vector_query_base(self, query: str):
         """
-        Query the 'BaseSchema' collection in Weaviate based on a question.
+        Query the 'BaseSchema' collection in Weaviate based on a question using vector similarity search.
+        :return: The query results
+        """
+        collection = self.client.collections.get(BASE_SCHEMA_NAME)
+        query = collection.query.near_text(
+            query=query,
+            limit=3,
+            return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
+        )
+        return query.objects
+
+    def vector_query_event(self, query: str, dates: list = None):
+        """
+        Query the 'EventSchema' collection in Weaviate based on a question using vector similarity search.
+        :return: The query results
+        """
+        collection = self.client.collections.get(EVENT_SCHEMA_NAME)
+        query = collection.query.near_text(  # filter on date and sort by date
+            query=query,
+            limit=3,
+            filters=(wcq.Filter.by_property("dates_str").contains_any(dates) if dates else None),
+            return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
+        )
+        return query.objects
+
+    def keyword_query_base(self, query: str):
+        """
+        Query the 'BaseSchema' collection in Weaviate based on a question using keyword search.
         :return: The query results
         """
         collection = self.client.collections.get(BASE_SCHEMA_NAME)
         query = collection.query.bm25(
             query=query,
             limit=3,
-            rerank=wcq.Rerank(
-                prop="text",
-            ),
+            query_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address"],
             return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
         )
-        print("Querying Weaviate: ")
-        for item in query.objects:
-            print(item.properties)
-            print(item.metadata)
+        return query.objects
 
-    def query_base_schema_hybrid(self, query: str):
+    def keyword_query_event(self, query: str, dates: list = None):
         """
-        Query the 'BaseSchema' collection in Weaviate based on a question.
+        Query the 'EventSchema' collection in Weaviate based on a question using keyword search.
+        :return: The query results
+        """
+        print("Querying Weaviate " + str(query) + " with dates: " + str(dates))
+        collection = self.client.collections.get(EVENT_SCHEMA_NAME)
+        query = collection.query.bm25(  # filter on date and sort by date
+            query=query,
+            limit=3,
+            query_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address"],
+            filters=(wcq.Filter.by_property("dates_str").contains_any(dates) if dates else None),
+            return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
+        )
+        return query.objects
+
+    def hybrid_query_base(self, query: str):
+        """
+        Query the 'BaseSchema' collection in Weaviate based on a question using hybrid search.
         :return: The query results
         """
         collection = self.client.collections.get(BASE_SCHEMA_NAME)
@@ -195,30 +228,33 @@ class VectorStorage:
             query=query,
             fusion_type=wcq.HybridFusion.RELATIVE_SCORE,
             auto_limit=2,
-            limit=5,
-            query_properties=["text", "brief", "header"],
+            limit=3,
+            alpha=0.65,
+            query_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address"],
             rerank=wcq.Rerank(
                 prop="text",
                 query=query
             ),
             return_metadata=wcq.MetadataQuery(score=True, explain_score=True)
         )
-        print("Querying Weaviate: ")
-        for item in query.objects:
-            print(item.properties)
-            print(item.metadata)
+        return [p.properties for p in query.objects]
 
-    def query_event_schema_hybrid(self, query: str, dates: list):
+    def hybrid_query_event(self, query: str, dates: list = None):
         """
-        Query the 'EventSchema' collection in Weaviate based on a question.
+        Query the 'EventSchema' collection in Weaviate based on a question using hybrid search.
         :return: The query results
         """
         print("Querying Weaviate " + str(query) + " with dates: " + str(dates))
         collection = self.client.collections.get(EVENT_SCHEMA_NAME)
-        query = collection.query.hybrid(  # filter on date and sort by date
+        query = collection.query.hybrid(
             query=query,
-            limit=5,
-            query_properties=["text", "brief", "header"],
+            fusion_type=wcq.HybridFusion.RELATIVE_SCORE,
+            auto_limit=2,
+            limit=3,
+            alpha=0.65,
+            query_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address"],
             filters=(wcq.Filter.by_property("dates_str").contains_any(dates) if dates else None),
 
             rerank=wcq.Rerank(
@@ -227,10 +263,7 @@ class VectorStorage:
             ),
             return_metadata=wcq.MetadataQuery(score=True, explain_score=True)
         )
-        print("Querying Weaviate " + str(query))
-        for item in query.objects:
-            print(item.properties)
-            print(item.metadata)
+        return [p.properties for p in query.objects]
 
     def _get_dates_str(self, dates):
         dates_str = ""
@@ -270,9 +303,8 @@ def setup_vector_store():
 
 
 if __name__ == "__main__":
-    vs = setup_vector_store()
-    # vs = VectorStorage()
-    vs.get_all_items(EVENT_SCHEMA_NAME)
-    print("--------------------------------------------------------------------")
-    vs.query_event_schema_hybrid("design", ["2024-05"])
+    # vs = setup_vector_store()
+    vs = VectorStorage()
+    data = vs.hybrid_query_event("I would love to visit a museum")
     vs.close()
+    print(data)
