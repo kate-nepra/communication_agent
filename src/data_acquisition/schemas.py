@@ -19,6 +19,9 @@ class BaseSchema:
     date_fetched: str
     address: str = None
 
+    def asdict(self):
+        return self.__dict__
+
 
 @dataclass
 class EventSchema(BaseSchema):

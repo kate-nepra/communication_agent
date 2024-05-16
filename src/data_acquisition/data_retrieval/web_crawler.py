@@ -1,5 +1,3 @@
-import arrow
-
 from src.constants import TODAY
 from src.data_acquisition.constants import URL, DATE_ADDED, PARENT, CRAWL_ONLY
 from src.data_acquisition.data_retrieval.constants import BANNED_SUBSTRINGS
@@ -10,8 +8,9 @@ from urllib.parse import urlparse, urlunparse
 
 
 class WebCrawler:
+    """Class for crawling websites and extracting urls from them."""
 
-    def __init__(self, url, parents: list):
+    def __init__(self, url: str, parents: list):
         self.url = url
         self.ws = WebScraper(url)
         self.parents = parents
@@ -30,7 +29,7 @@ class WebCrawler:
             urls = self._del_subset(ban, urls)
         return self._get_cleaned_df(urls).drop_duplicates()
 
-    def _get_cleaned_df(self, urls) -> pd.DataFrame:
+    def _get_cleaned_df(self, urls: list) -> pd.DataFrame:
         """Returns a DataFrame with the cleaned urls."""
         urls = self._clean_url_list(urls)
         dicts = self._create_urls_dict(urls)
@@ -40,7 +39,7 @@ class WebCrawler:
         return df.drop_duplicates(subset=URL)
 
     @staticmethod
-    def _get_main_urls(html) -> list[str]:
+    def _get_main_urls(html: str) -> list[str]:
         """Returns a list of urls from the main part of the website."""
         if not html:
             return []
@@ -51,7 +50,7 @@ class WebCrawler:
             return urls
         return []
 
-    def _create_urls_dict(self, urls) -> list[dict]:
+    def _create_urls_dict(self, urls: list) -> list[dict]:
         """Returns a list of dictionaries with the urls and the date they were added."""
         date = TODAY
         return [{URL: url, DATE_ADDED: date, PARENT: self._get_parent_part_url(url)} for url in urls]
@@ -66,11 +65,11 @@ class WebCrawler:
             urls = self._del_subset(suffix, urls)
         return [url for url in urls if url.startswith('http') or url.startswith('www')]
 
-    def _is_url_in_parents(self, url) -> bool:
+    def _is_url_in_parents(self, url: str) -> bool:
         return url in self.parents
 
     @staticmethod
-    def _get_nav_urls(html) -> list[str]:
+    def _get_nav_urls(html: str) -> list[str]:
         """Returns a list of urls from the navigation part of the website."""
         if not html:
             return []
@@ -82,19 +81,13 @@ class WebCrawler:
         return []
 
     @staticmethod
-    def _get_parent_part_url(url) -> str:
+    def _get_parent_part_url(url: str) -> str:
         """Returns the parent part of the url."""
         parsed_url = urlparse(url)
         parent_url = urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', ''))
         return parent_url
 
     @staticmethod
-    def _del_subset(substr, urls) -> list[str]:
+    def _del_subset(substr: str, urls: list) -> list[str]:
         """Deletes the urls containing the given substring."""
         return [url for url in urls if substr not in url]
-
-
-if __name__ == '__main__':
-    crawler = WebCrawler('https://www.gotobrno.cz/en/events-in-brno/?pageload=9&date=2024-04-24&type=grid', [])
-    for url in crawler.get_extend_df()[URL]:
-        print(f"'{url}',")

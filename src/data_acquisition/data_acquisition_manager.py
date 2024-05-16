@@ -32,11 +32,78 @@ class DataAcquisitionManager:
     - passing the url to the web scraper
     - passing the scraped data to the parser
     - storing the parsed data in the vector database
+    - updating the sources database with the parsed data
     """
 
     def __init__(self, sources_db: SourcesDB, agent: ApiAgent):
         self.sources_db = sources_db
         self.agent = agent
+
+    def initial_data_acquisition(self, iterations: int):
+        """
+        This method is responsible for the initial data acquisition. It scrapes the contents of the initial non
+        crawl_only data and passes the crawl_only data to the web crawler and the web scraper. As a result, the sources
+        database is expanded with the new urls, and the parsed data is stored in the parsed_sources table.
+
+        :param iterations: Number of iterations
+        """
+
+        urls_df = self.sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
+        if urls_df.empty:
+            to_scrape = self.sources_db.get_all_static_sources_as_dataframe()
+        else:
+            to_scrape = pd.concat(
+                [urls_df[urls_df[CRAWL_ONLY] == 0], self.sources_db.get_all_static_sources_as_dataframe()])
+
+        self._scrape_and_update_sources(to_scrape)
+        self.acquire_data(urls_df, iterations)
+
+    def acquire_data(self, urls_df: pd.DataFrame, iterations: int):
+        """
+        This method is responsible for the data acquisition process. It processes the given urls and passes them to the
+        web crawler and the web scraper.
+        :param urls_df: DataFrame with the urls to be processed
+        :param iterations: Number of iterations
+        """
+        logger.info(f'Acquiring data: {urls_df}')
+        for i in range(iterations):
+            urls_df = self._process_urls(urls_df[URL])
+
+    def update_by_type_name(self, type_name: str, vec_db: VectorStorage):
+        if type_name == PDF:
+            self._update_pdfs()
+            return
+        urls = self.sources_db.get_urls_by_type_and_date_parsed(type_name, TODAY)
+        self.sources_db.delete_outdated_parsed_sources(urls)
+        if type_name == EVENT:
+            vec_db.event_update_urls(urls, self.sources_db)
+        else:
+            vec_db.base_update_urls(urls, self.sources_db)
+
+    def _process_urls(self, urls: list) -> pd.DataFrame:
+        """
+        This method processes the given urls and passes them to the web crawler and the web scraper.
+        :param urls: List of urls to be processed
+        :return: DataFrame with the new urls
+        """
+        acquired = pd.DataFrame()
+        for url in urls:
+            new_df = self._process_new_urls_from_url(url)
+            acquired = pd.concat([acquired, new_df])
+        return acquired
+
+    def _update_urls(self, urls: list) -> pd.DataFrame:
+        """
+        This method updates the given urls in the sources database.
+        :param urls: List of urls to be updated
+        :return: DataFrame with the new urls
+        """
+        acquired = pd.DataFrame()
+        for url in urls:
+            new_df = self._process_new_urls_from_url(url)
+            acquired = pd.concat([acquired, new_df])
+        acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]]
+        return acquired
 
     def _crawl_url(self, url: str, parents: list) -> pd.DataFrame:
         """
@@ -59,57 +126,6 @@ class DataAcquisitionManager:
         extend_df[TYPE_IDS] = None
         return extend_df
 
-    def acquire_data(self, urls_df, iterations: int) -> None:
-        """
-        This method is responsible for the data acquisition process. It processes the given urls and passes them to the
-        web crawler and the web scraper.
-        """
-        logger.info('Acquiring data: %s', urls_df)
-        for i in range(iterations):
-            urls_df = self._process_urls(urls_df[URL])
-
-    def _process_urls(self, urls: list) -> pd.DataFrame:
-        """
-        This method processes the given urls and passes them to the web crawler and the web scraper.
-        :param urls: List of urls to be processed
-        :return: DataFrame with the new urls
-        """
-        acquired = pd.DataFrame()
-        for url in urls:
-            new_df = self._process_new_urls_from_url(url)
-            acquired = pd.concat([acquired, new_df])
-        # acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]] TODO
-        return acquired
-
-    def _update_urls(self, urls: list) -> pd.DataFrame:
-        """
-        This method updates the given urls in the sources database.
-        :param urls: List of urls to be updated
-        :return: DataFrame with the new urls
-        """
-        acquired = pd.DataFrame()
-        for url in urls:
-            new_df = self._process_new_urls_from_url(url)
-            acquired = pd.concat([acquired, new_df])
-        acquired = acquired[int(self.sources_db.get_type_id(PDF)) not in acquired[TYPE_IDS]]
-        return acquired
-
-    def initial_data_acquisition(self, iterations: int) -> None:
-        """
-        This method is responsible for the initial data acquisition. It scrapes the contents of the initial non
-        crawl_only data and passes the crawl_only data to the web crawler and the web scraper.
-        """
-
-        urls_df = self.sources_db.get_all_non_banned_non_static_non_pdf_sources_as_dataframe()
-        if urls_df.empty:
-            to_scrape = self.sources_db.get_all_static_sources_as_dataframe()
-        else:
-            to_scrape = pd.concat(
-                [urls_df[urls_df[CRAWL_ONLY] == 0], self.sources_db.get_all_static_sources_as_dataframe()])
-
-        self._scrape_and_update_sources(to_scrape)
-        self.acquire_data(urls_df, iterations)
-
     def _is_banned(self, ws: WebScraper, new_url: str, banned: list) -> bool:
         """
         This method checks if the given url is banned based on the content of the web page.
@@ -120,23 +136,13 @@ class DataAcquisitionManager:
             return True
         return False
 
-    def _update_existing_urls(self, existing_urls) -> None:
+    def _update_existing_urls(self, existing_urls):
         """
         This method updates the existing urls in the sources' database. It sets the date_added to current date.
         """
         self.sources_db.update_existing_urls_date(existing_urls, TODAY)
 
-    def update_by_type_name(self, type_name: str, vec_db: VectorStorage) -> None:
-        if type_name == PDF:
-            self._update_pdfs()
-            return
-        urls = self.sources_db.get_urls_by_type_and_date_parsed(type_name, TODAY)
-        if type_name == EVENT:
-            vec_db.event_update_urls(urls, self.sources_db)
-        else:
-            vec_db.base_update_urls(urls, self.sources_db)
-
-    def _update_pdfs(self) -> None:
+    def _update_pdfs(self):
         urls = self.sources_db.get_all_pdf_urls()
         docs = PdfProcessor(urls).get_chunks_batch()
         for chunks, url in docs:
@@ -147,7 +153,7 @@ class DataAcquisitionManager:
                                                       content.record_type)
         self.sources_db.update_existing_urls_date(urls, TODAY)
 
-    def _scrape_and_update_sources(self, to_scrape: pd.DataFrame) -> None:
+    def _scrape_and_update_sources(self, to_scrape: pd.DataFrame):
         """
         This method scrapes the contents of the given urls and updates the sources database with the scraped data.
         :param to_scrape: DataFrame with the urls to be scraped
@@ -166,8 +172,8 @@ class DataAcquisitionManager:
         """
         This method removes the banned urls from the given DataFrame.
         :param banned: List of banned urls
-        :param extend_df:
-        :return:
+        :param extend_df: DataFrame with the urls to be processed
+        :return: DataFrame without the banned urls
         """
 
         extend_df = extend_df[~extend_df[URL].isin(banned)]
@@ -175,7 +181,7 @@ class DataAcquisitionManager:
             extend_df = extend_df[~extend_df[URL].str.contains(ban, regex=False)]
         return extend_df
 
-    def _handle_pdf(self, url: str, parent_url: str) -> None:
+    def _handle_pdf(self, url: str, parent_url: str):
         """ This method handles the pdf urls. It adds the pdf url to the sources' database. Only pdfs from
         gotobrno are allowed."""
         if BASE_URL in url:
@@ -247,7 +253,7 @@ class DataAcquisitionManager:
 
         return new_urls
 
-    def _content_changed(self, new_url, ws):
+    def _content_changed(self, new_url: str, ws: WebScraper) -> bool:
         encoded_content = self.sources_db.get_encoded_content(new_url)
         if encoded_content and ws.get_encoded_content() == encoded_content:
             logger.info(f'Content not changed: {new_url}')
@@ -261,7 +267,7 @@ class DataAcquisitionManager:
         :param content: Content to be converted
         :return: Content as a dictionary
         """
-        return json.dumps(content.__dict__, ensure_ascii=False)
+        return json.dumps(content.asdict(), ensure_ascii=False)
 
 
 def process_arguments():

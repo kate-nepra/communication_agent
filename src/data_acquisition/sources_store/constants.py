@@ -1,3 +1,4 @@
+import os
 from configparser import ConfigParser
 
 from src.constants import CONSTANTS_CONFIG_PATH
@@ -12,3 +13,8 @@ CONTENT_TYPES_CSV = _config_csv_paths['CONTENT_TYPES_CSV']
 SOURCES_CSV = _config_csv_paths['SOURCES_CSV']
 BANNED_SOURCES_CSV = _config_csv_paths['BANNED_SOURCES_CSV']
 PARSED_SOURCES_CSV = _config_csv_paths['PARSED_SOURCES_CSV']
+
+HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+PASSWORD = os.getenv("DB_PASSWORD")
+DATABASE = os.getenv("DATABASE")

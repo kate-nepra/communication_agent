@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from src.agents.api_agent import ApiAgent, Message
 from src.agents.message import SystemMessage, UserMessage
 from src.constants import TODAY
-from src.data_acquisition.constants import STATIC, PLACE, EVENT, ADMINISTRATION, SYSTEM, USER, DATES_EXAMPLE, \
-    DATES_FORMAT_EXAMPLE, RECORD_TYPE_LABELS
+from src.data_acquisition.constants import STATIC, PLACE, EVENT, ADMINISTRATION, DATES_EXAMPLE, DATES_FORMAT_EXAMPLE, \
+    RECORD_TYPE_LABELS
 from src.data_acquisition.content_processing.content_classification import get_content_type_preclassified_function_call, \
     preclassify_by_url
 from src.data_acquisition.schemas import BaseSchema, EventSchema
@@ -15,6 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
+    """
+    Returns the parsed content based on the given text using an agent function call.
+    :param agent: ApiAgent
+    :param url: url that the content belongs to
+    :param content: the text to be parsed
+    :return: the parsed content in the form of a BaseSchema object
+    """
+
     def add_place(header: str, text: str, brief: str, address: str) -> BaseSchema:
         """Call this function if you encounter entity that is a place or destination in or near Brno city, such as restaurant, café, bar, bakery, museum, tour, greenery, church, castle, university, kino, theatre or similar."""
         return BaseSchema(header, PLACE, brief, text, url, TODAY, address)
@@ -48,6 +56,14 @@ def get_parsed_content_by_function_call(agent: ApiAgent, url: str, content: str)
 
 
 def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, content: str):
+    """
+    Returns the parsed content based on the given text using an agent function call, where the choice of the function
+    and providing the parameters is divided into separate steps.
+    :param agent: ApiAgent
+    :param url: url that the content belongs to
+    :param content: the text to be parsed
+    :return:
+    """
     content_type = get_content_type_preclassified_function_call(agent, url, content)
     logger.info(f"Content type: {content_type}")
     if content_type not in RECORD_TYPE_LABELS:
@@ -57,6 +73,14 @@ def get_parsed_content_by_divided_function_call(agent: ApiAgent, url: str, conte
 
 
 def get_parsed_content_preclassified_function_call(agent: ApiAgent, url: str, content: str) -> BaseSchema:
+    """
+    Returns the parsed content based on the given text using an agent function call, where the content type is
+    pre-classified for less API calls if possible.
+    :param agent: ApiAgent
+    :param url: url that the content belongs to
+    :param content: the text to be parsed
+    :return: the parsed content in the form of a BaseSchema object
+    """
     content_type = preclassify_by_url(url)
     if content_type is None or content_type not in RECORD_TYPE_LABELS:
         logger.info(f"Could not preclassify content type")
@@ -65,6 +89,16 @@ def get_parsed_content_preclassified_function_call(agent: ApiAgent, url: str, co
 
 
 def get_parsed_by_type(record_type, agent: ApiAgent, url: str, content: str) -> BaseSchema:
+    """
+    Returns the parsed content based on the given text using an agent function call. The function call is based on the
+    given record type.
+    :param record_type: the type of the record [place, event, administration, static]
+    :param agent: ApiAgent
+    :param url: url that the content belongs to
+    :param content: the text to be parsed
+    :return: the parsed content in the form of a BaseSchema object
+    """
+
     def get_params_base(header: str, text: str, brief: str, address: str) -> BaseSchema:
         """This function encapsulates the process of creating a BaseSchema object.
         :param header: The header of the entity.

@@ -10,20 +10,15 @@ from sqlalchemy.orm import sessionmaker, relationship, declarative_base, aliased
 from sqlalchemy.exc import IntegrityError
 from src.data_acquisition.constants import TYPE_IDS, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_PARSED, STATIC, \
     PDF, ENCODED_CONTENT
-from src.data_acquisition.sources_store.constants import CONTENT_TYPES_CSV, RECORD_TYPES_CSV, SOURCES_CSV, \
-    BANNED_SOURCES_CSV, PARSED_SOURCES_CSV
+from src.data_acquisition.sources_store.constants import RECORD_TYPES_CSV, SOURCES_CSV, BANNED_SOURCES_CSV, \
+    CONTENT_TYPES_CSV, PARSED_SOURCES_CSV, HOST, DB_USER, PASSWORD, DATABASE
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
 load_dotenv()
 
-HOST = os.getenv("DB_HOST")
-USER = os.getenv("DB_USER")
-PASSWORD = os.getenv("DB_PASSWORD")
-DATABASE = os.getenv("DATABASE")
 
-
-def create_database(host=HOST, user=USER, password=PASSWORD, database=DATABASE):
+def create_database(host=HOST, user=DB_USER, password=PASSWORD, database=DATABASE):
     connection = mysql.connector.connect(
         host=host,
         user=user,
@@ -83,11 +78,11 @@ class Sources(Base):
 
 
 class SourcesDB:
-    def __init__(self, host=HOST, user=USER, password=PASSWORD, database=DATABASE):
+    def __init__(self, host=HOST, user=DB_USER, password=PASSWORD, database=DATABASE):
         self.engine = create_engine(f"mysql+mysqlconnector://{user}:{password}@{host}/{database}")
         Base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        session = sessionmaker(bind=self.engine)
+        self.session = session()
 
     def add_or_update_source(self, url: str, date_added: str, date_parsed: str, crawl_only: bool, parent: str,
                              type_ids: list, encoded_content: str = None):
@@ -144,7 +139,7 @@ class SourcesDB:
         self.session.add(record_type)
         self.session.commit()
 
-    def add_types(self, record_types: list[tuple]) -> None:
+    def add_types(self, record_types: list[tuple]):
         """Adds record types to the database."""
         type_objects = [RecordTypes(record_type=t[0], update_interval=t[1], content_type_id=t[2]) for t in record_types]
         self.session.add_all(type_objects)
@@ -157,7 +152,7 @@ class SourcesDB:
             raise ValueError(f"Type '{type_name}' not found in the database.")
         return record_type.id
 
-    def insert_sources_from_csv(self, file_path: str) -> None:
+    def insert_sources_from_csv(self, file_path: str):
         """Inserts sources from a given CSV file."""
         data = pd.read_csv(file_path)
         data[TYPE_IDS] = data.apply(lambda row: self.get_type_ids(row), axis=1)
@@ -165,7 +160,7 @@ class SourcesDB:
         csv_sources = [tuple(row) for row in data.values]
         self.add_sources(csv_sources)
 
-    def get_type_ids(self, row) -> list:
+    def get_type_ids(self, row: dict) -> list:
         """Get the IDs of record types for a source."""
         type_names = row[TYPE].split(', ')
         type_ids = []
@@ -175,19 +170,19 @@ class SourcesDB:
                 type_ids.append(type_id)
         return type_ids
 
-    def insert_types_from_csv(self, file_path: str) -> None:
+    def insert_types_from_csv(self, file_path: str):
         """Inserts record types from given csv file."""
         data = pd.read_csv(file_path)
         record_types = [tuple(row) for row in data.values]
         self.add_types(record_types)
 
-    def insert_banned_sources_from_csv(self, file_path: str) -> None:
+    def insert_banned_sources_from_csv(self, file_path: str):
         """Inserts banned sources from given csv file."""
         data = pd.read_csv(file_path)
         for index, row in data.iterrows():
             self.add_or_update_banned_source(row[URL], row[DATE_ADDED])
 
-    def insert_parsed_sources_from_csv(self, file_path: str) -> None:
+    def insert_parsed_sources_from_csv(self, file_path: str):
         """Inserts parsed sources from given csv file."""
         data = pd.read_csv(file_path)
         parsed_sources = [tuple(row) for row in data.values]
@@ -224,17 +219,16 @@ class SourcesDB:
         query = self.session.query(Sources.url).filter(Sources.url.in_(url_list)).distinct().all()
         return [str(url[0]) for url in query]
 
-    def update_existing_urls_date(self, existing_urls: list[str], date_added: str) -> None:
+    def update_existing_urls_date(self, existing_urls: list[str], date_added: str):
         """Updates the date_added of the existing urls."""
         self.session.query(Sources).filter(Sources.url.in_(existing_urls)).update({Sources.date_added: date_added},
                                                                                   synchronize_session=False)
         self.session.commit()
 
-    def insert_sources(self, extend_df: pd.DataFrame) -> None:
+    def insert_sources(self, extend_df: pd.DataFrame):
         """
         Inserts the sources in the database, including the association with record types.
         :param extend_df: DataFrame with the sources to insert, columns: url, date_added, date_parsed, crawl_only, parent, type_ids (list of record type IDs).
-        :return:
         """
         for index, row in extend_df.iterrows():
             source = Sources(
@@ -253,11 +247,10 @@ class SourcesDB:
 
         self.session.commit()
 
-    def insert_or_update_sources(self, extend_df: pd.DataFrame) -> None:
+    def insert_or_update_sources(self, extend_df: pd.DataFrame):
         """
         Inserts or updates the sources in the database.
         :param extend_df: DataFrame with the sources to insert or update, the columns are: url, date_added, date_parsed, crawl_only, parent, type_ids.
-        :return:
         """
 
         for index, row in extend_df.iterrows():
@@ -286,7 +279,7 @@ class SourcesDB:
             except IntegrityError:
                 self.session.rollback()
 
-    def add_or_update_banned_source(self, banned_source: str, date_added: str) -> None:
+    def add_or_update_banned_source(self, banned_source: str, date_added: str):
         """Adds or updates a banned source in the database."""
         source = Sources(url=banned_source, date_added=date_added, banned=True)
         self.session.merge(source)
@@ -309,13 +302,13 @@ class SourcesDB:
         )
         return pd.read_sql(query.statement, self.session.bind)
 
-    def add_parsed_sources(self, parsed_sources: list[tuple]) -> None:
+    def add_parsed_sources(self, parsed_sources: list[tuple]):
         """Adds parsed sources to the database."""
         source_objects = [ParsedSources(url=s[0], content_type_id=s[1], content=s[2]) for s in parsed_sources]
         self.session.add_all(source_objects)
         self.session.commit()
 
-    def add_parsed_source(self, url: str, content: str, type_name: str) -> None:
+    def add_parsed_source(self, url: str, content: str, type_name: str):
         """Adds a parsed source to the database."""
         source = ParsedSources(url=url, content=content,
                                content_type_id=self.get_content_type_id_from_record_type_name(type_name))
@@ -342,13 +335,13 @@ class SourcesDB:
             ParsedSources.content_type.has(ContentTypes.content_type == type_name)).all()
         return [content for content, in parsed_sources]
 
-    def insert_content_types_from_csv(self, file_path: str) -> None:
+    def insert_content_types_from_csv(self, file_path: str):
         """Inserts content types from given csv file."""
         data = pd.read_csv(file_path)
         content_types = [tuple(row) for row in data.values]
         self.add_content_types(content_types)
 
-    def add_content_types(self, content_types):
+    def add_content_types(self, content_types: list):
         """Adds content types to the database."""
         type_objects = [ContentTypes(content_type=t[0]) for t in content_types]
         self.session.add_all(type_objects)
@@ -373,14 +366,14 @@ class SourcesDB:
         self.session.merge(source)
         self.session.commit()
 
-    def get_encoded_content(self, url: str):
+    def get_encoded_content(self, url: str) -> str:
         """Returns the encoded content of the source of the given url."""
         source = self.session.query(Sources).filter(Sources.url == url).first()
         if not source:
             return None
         return source.encoded_content
 
-    def get_urls_by_type_and_date_parsed(self, type_name, date_parsed):
+    def get_urls_by_type_and_date_parsed(self, type_name: str, date_parsed: str) -> list[str]:
         """Returns the urls of sources of the given type and date parsed."""
         record_types_alias = aliased(RecordTypes)
         query = self.session.query(Sources.url).join(Sources.record_types).join(record_types_alias).filter(
@@ -391,7 +384,7 @@ class SourcesDB:
         )
         return [url for url, in query]
 
-    def get_parsed_sources_contents_by_urls_and_content_type(self, urls, type_name):
+    def get_parsed_sources_contents_by_urls_and_content_type(self, urls: list[str], type_name: str) -> list[str]:
         """Returns the parsed sources contents of the given urls and content type."""
         type_id = self.get_content_type_id(type_name)
         query = self.session.query(ParsedSources.content).filter(
@@ -402,17 +395,35 @@ class SourcesDB:
         )
         return [content for content, in query]
 
-    def get_content_type_id(self, type_name):
+    def get_content_type_id(self, type_name: str):
         """Returns the content type id of the given type name."""
         content_type = self.session.query(ContentTypes).filter(ContentTypes.content_type == type_name).first()
         return content_type.id
 
+    def delete_outdated_parsed_sources(self, urls: list[str]):
+        """Delete parsed sources by url if the date_parsed in sources is not today."""
+        self.session.query(ParsedSources).filter(
+            and_(
+                ParsedSources.url.in_(urls),
+                ParsedSources.url.notin_(self.get_urls_by_date_parsed())
+            )
+        ).delete()
+        self.session.commit()
 
-if __name__ == "__main__":
-    # create_database()
+    def get_urls_by_date_parsed(self):
+        """Returns the urls of sources where the date_parsed is today."""
+        return [url for url, in self.session.query(Sources.url).filter(Sources.date_parsed == DATE_PARSED).all()]
+
+
+def main():
+    create_database()
     s_db = SourcesDB()
-    # s_db.insert_content_types_from_csv(CONTENT_TYPES_CSV)
+    s_db.insert_content_types_from_csv(CONTENT_TYPES_CSV)
     s_db.insert_types_from_csv(RECORD_TYPES_CSV)
     s_db.insert_sources_from_csv(SOURCES_CSV)
     s_db.insert_banned_sources_from_csv(BANNED_SOURCES_CSV)
-    # s_db.insert_parsed_sources_from_csv(PARSED_SOURCES_CSV)
+    s_db.insert_parsed_sources_from_csv(PARSED_SOURCES_CSV)
+
+
+if __name__ == "__main__":
+    main()

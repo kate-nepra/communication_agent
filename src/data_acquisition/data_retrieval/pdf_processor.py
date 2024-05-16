@@ -1,7 +1,5 @@
 import asyncio
-import logging
 import os
-from markdown import markdown
 import requests
 from llama_index_client import Document
 from src.constants import MAX_SIZE
@@ -15,6 +13,7 @@ load_dotenv()
 
 
 def batch_scrape_pdfs(urls: list[str]):
+    """Downloads multiple pdfs from the given urls and saves them to the destination folder."""
     return [scrape_pdf(url, PDF_FOLDER) for url in urls]
 
 
@@ -28,12 +27,14 @@ def scrape_pdf(url: str, destination_folder: str = PDF_FOLDER) -> str:
 
 
 class PdfProcessor:
+    """Class for processing pdfs. It can download pdfs from the given urls, parse them, clean them, split them into
+    chunks, and return the chunks as a list of strings."""
 
     def __init__(self, urls: list[str]):
         self.urls = urls
         self.destinations = batch_scrape_pdfs(urls) if urls else []
 
-    def get_cleaned_md(self, text) -> str:
+    def get_cleaned_md(self, text: str) -> str:
         """Removes empty lines, lines with only numbers, and duplicate lines from the markdown file. Also removes lines
         that contain only 'NO_CONTENT_HERE' string. Returns the cleaned markdown as a string."""
         num_lines = 0
@@ -65,7 +66,7 @@ class PdfProcessor:
         return text
 
     @staticmethod
-    def _remove_duplicate_line(curr_line, i, lines, lines_cnt):
+    def _remove_duplicate_line(curr_line: int, i: int, lines: list, lines_cnt: int) -> tuple[int, int, list, int]:
         """Removes duplicate lines from the markdown."""
         if curr_line == lines[i]:
             del lines[i]
