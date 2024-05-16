@@ -6,7 +6,7 @@ import mysql.connector
 import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date, ForeignKey, Table, and_
-from sqlalchemy.orm import sessionmaker, relationship, declarative_base
+from sqlalchemy.orm import sessionmaker, relationship, declarative_base, aliased
 from sqlalchemy.exc import IntegrityError
 from src.data_acquisition.constants import TYPE_IDS, TYPE, URL, DATE_ADDED, CRAWL_ONLY, PARENT, DATE_PARSED, STATIC, \
     PDF, ENCODED_CONTENT
@@ -299,9 +299,10 @@ class SourcesDB:
 
     def get_all_non_crawl_only_not_banned_sources_by_type(self, type_name: str) -> pd.DataFrame:
         """Returns all sources that are not crawl only, not banned, and of the given type."""
-        query = self.session.query(Sources).join(Sources.record_types).join(RecordTypes).filter(
+        record_types_alias = aliased(RecordTypes)
+        query = self.session.query(Sources).join(Sources.record_types).join(record_types_alias).filter(
             and_(
-                RecordTypes.record_type == type_name,
+                record_types_alias.record_type == type_name,
                 Sources.banned.is_(False),
                 Sources.crawl_only.is_(False)
             )
@@ -323,8 +324,10 @@ class SourcesDB:
 
     def get_all_pdf_urls(self) -> list:
         """Returns all pdf urls."""
-        pdf_urls = self.session.query(Sources.url).join(Sources.record_types).join(RecordTypes).filter(
-            RecordTypes.record_type == PDF).all()
+        record_types_alias = aliased(RecordTypes)
+        pdf_urls = self.session.query(Sources.url).join(Sources.record_types).join(record_types_alias).filter(
+            record_types_alias.record_type == PDF
+        ).all()
 
         return [url for url, in pdf_urls]
 
@@ -377,12 +380,39 @@ class SourcesDB:
             return None
         return source.encoded_content
 
+    def get_urls_by_type_and_date_parsed(self, type_name, date_parsed):
+        """Returns the urls of sources of the given type and date parsed."""
+        record_types_alias = aliased(RecordTypes)
+        query = self.session.query(Sources.url).join(Sources.record_types).join(record_types_alias).filter(
+            and_(
+                record_types_alias.record_type == type_name,
+                Sources.date_parsed == date_parsed
+            )
+        )
+        return [url for url, in query]
+
+    def get_parsed_sources_contents_by_urls_and_content_type(self, urls, type_name):
+        """Returns the parsed sources contents of the given urls and content type."""
+        type_id = self.get_content_type_id(type_name)
+        query = self.session.query(ParsedSources.content).filter(
+            and_(
+                ParsedSources.url.in_(urls),
+                ParsedSources.content_type_id == type_id
+            )
+        )
+        return [content for content, in query]
+
+    def get_content_type_id(self, type_name):
+        """Returns the content type id of the given type name."""
+        content_type = self.session.query(ContentTypes).filter(ContentTypes.content_type == type_name).first()
+        return content_type.id
+
 
 if __name__ == "__main__":
-    create_database()
+    # create_database()
     s_db = SourcesDB()
-    s_db.insert_content_types_from_csv(CONTENT_TYPES_CSV)
+    # s_db.insert_content_types_from_csv(CONTENT_TYPES_CSV)
     s_db.insert_types_from_csv(RECORD_TYPES_CSV)
     s_db.insert_sources_from_csv(SOURCES_CSV)
     s_db.insert_banned_sources_from_csv(BANNED_SOURCES_CSV)
-    s_db.insert_parsed_sources_from_csv(PARSED_SOURCES_CSV)
+    # s_db.insert_parsed_sources_from_csv(PARSED_SOURCES_CSV)

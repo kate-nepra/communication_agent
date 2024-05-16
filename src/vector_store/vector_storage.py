@@ -9,8 +9,9 @@ from dotenv import load_dotenv
 from json_repair import repair_json
 from sqlalchemy import null
 
-from src.constants import DATETIME_FORMAT, DATE_FORMAT
-from src.data_acquisition.sources_store.sourcesdb import SourcesDB
+from src.constants import DATE_FORMAT
+from src.data_acquisition.constants import URL, EVENT, BASE
+from src.data_acquisition.sources_store.sources_db import SourcesDB
 import weaviate
 
 from weaviate.classes.config import Configure, VectorDistances
@@ -22,10 +23,13 @@ EVENT_SCHEMA_NAME = "EventSchema"
 
 
 class VectorStorage:
+    """ Class for handling Weaviate database."""
+
     def __init__(self):
         self.client = weaviate.connect_to_local(headers={'X-Cohere-Api-Key': os.getenv("COHERE_APIKEY")})
 
     def create_schemas(self):
+        """Creates schemas for base and event data."""
         self.delete_schema(BASE_SCHEMA_NAME)
         self.delete_schema(EVENT_SCHEMA_NAME)
         self.create_base_schema()
@@ -38,7 +42,6 @@ class VectorStorage:
         """
         Imports data to Weaviate
         :param data: data to import
-        :return: None
         """
         with self.client.batch.fixed_size(batch_size=50) as batch:
             counter = 0
@@ -69,7 +72,6 @@ class VectorStorage:
         """
         Imports data to Weaviate
         :param data: data to import
-        :return: None
         """
         with self.client.batch.fixed_size(batch_size=50) as batch:
             counter = 0
@@ -156,6 +158,28 @@ class VectorStorage:
                 ]),
                 wcc.Property(name="dates_str", data_type=wcc.DataType.TEXT, skip_indexing=True)])
 
+    def event_update_urls(self, urls, source_db):
+        """
+        Update the records of given urls in the 'EventSchema' collection in Weaviate.
+        :return: None
+        """
+        records_df = source_db.get_parsed_sources_contents_by_urls_and_content_type(urls, EVENT)
+        collection = self.client.collections.get(EVENT_SCHEMA_NAME)
+        collection.data.delete_many(
+            where=wcq.Filter.by_property(URL).contains_any(urls))
+        self.import_stringed_json_event(records_df)
+
+    def base_update_urls(self, urls, source_db):
+        """
+        Update the records of given urls in the 'BaseSchema' collection in Weaviate.
+        :return: None
+        """
+        records_df = source_db.get_parsed_sources_contents_by_urls_and_content_type(urls, BASE)
+        collection = self.client.collections.get(BASE_SCHEMA_NAME)
+        collection.data.delete_many(
+            where=wcq.Filter.by_property(URL).contains_any(urls))
+        self.import_stringed_json_base(records_df)
+
     def get_all_items(self, collection_name: str):
         return self.client.collections.get(collection_name)
 
@@ -167,7 +191,7 @@ class VectorStorage:
         collection = self.client.collections.get(BASE_SCHEMA_NAME)
         query = collection.query.near_text(
             query=query,
-            limit=3,
+            limit=5,
             return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
         )
         return query.objects
@@ -178,9 +202,9 @@ class VectorStorage:
         :return: The query results
         """
         collection = self.client.collections.get(EVENT_SCHEMA_NAME)
-        query = collection.query.near_text(  # filter on date and sort by date
+        query = collection.query.near_text(
             query=query,
-            limit=3,
+            limit=5,
             filters=(wcq.Filter.by_property("dates_str").contains_any(dates) if dates else None),
             return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
         )
@@ -194,9 +218,9 @@ class VectorStorage:
         collection = self.client.collections.get(BASE_SCHEMA_NAME)
         query = collection.query.bm25(
             query=query,
-            limit=3,
+            limit=5,
             query_properties=["text", "brief", "header", "address"],
-            return_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address", "url"],
             return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
         )
         return query.objects
@@ -208,11 +232,11 @@ class VectorStorage:
         """
         print("Querying Weaviate " + str(query) + " with dates: " + str(dates))
         collection = self.client.collections.get(EVENT_SCHEMA_NAME)
-        query = collection.query.bm25(  # filter on date and sort by date
+        query = collection.query.bm25(
             query=query,
-            limit=3,
+            limit=5,
             query_properties=["text", "brief", "header", "address"],
-            return_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address", "url"],
             filters=(wcq.Filter.by_property("dates_str").contains_any(dates) if dates else None),
             return_metadata=wcq.MetadataQuery(certainty=True, score=True, explain_score=True, distance=True)
         )
@@ -227,11 +251,11 @@ class VectorStorage:
         query = collection.query.hybrid(
             query=query,
             fusion_type=wcq.HybridFusion.RELATIVE_SCORE,
-            auto_limit=2,
-            limit=3,
+            auto_limit=1,
+            limit=5,
             alpha=0.65,
             query_properties=["text", "brief", "header", "address"],
-            return_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address", "url"],
             rerank=wcq.Rerank(
                 prop="text",
                 query=query
@@ -245,16 +269,15 @@ class VectorStorage:
         Query the 'EventSchema' collection in Weaviate based on a question using hybrid search.
         :return: The query results
         """
-        print("Querying Weaviate " + str(query) + " with dates: " + str(dates))
         collection = self.client.collections.get(EVENT_SCHEMA_NAME)
         query = collection.query.hybrid(
             query=query,
             fusion_type=wcq.HybridFusion.RELATIVE_SCORE,
-            auto_limit=2,
-            limit=3,
+            auto_limit=1,
+            limit=5,
             alpha=0.65,
             query_properties=["text", "brief", "header", "address"],
-            return_properties=["text", "brief", "header", "address"],
+            return_properties=["text", "brief", "header", "address", "url"],
             filters=(wcq.Filter.by_property("dates_str").contains_any(dates) if dates else None),
 
             rerank=wcq.Rerank(
@@ -266,6 +289,7 @@ class VectorStorage:
         return [p.properties for p in query.objects]
 
     def _get_dates_str(self, dates):
+        """Returns a string presentation of all dates."""
         dates_str = ""
         for date in dates:
             if "start" in date and "end" in date:
@@ -275,9 +299,27 @@ class VectorStorage:
         return dates_str
 
     @staticmethod
-    def _get_filled_in_dates(start_date, end_date):
-        start_datetime = datetime.strptime(start_date, DATETIME_FORMAT if 'T' in start_date else DATE_FORMAT)
-        end_datetime = datetime.strptime(end_date, DATETIME_FORMAT if 'T' in end_date else DATE_FORMAT)
+    def _get_filled_in_dates(start_date: str, end_date: str) -> str:
+        """Fills in the dates between start and end date."""
+        date_sec_length = 18
+        try:
+            start_date_format = '%Y-%m-%d'
+            if len(start_date) > date_sec_length:
+                start_date_format = '%Y-%m-%dT%H:%M:%S'
+            elif 'T' in start_date:
+                start_date_format = '%Y-%m-%dT%H:%M'
+
+            end_date_format = '%Y-%m-%d'
+            if len(end_date) > date_sec_length:
+                end_date_format = '%Y-%m-%dT%H:%M:%S'
+            elif 'T' in end_date:
+                end_date_format = '%Y-%m-%dT%H:%M'
+        except Exception as e:
+            logger.error(f"Error while parsing dates: {e}")
+            return start_date + " " + end_date
+
+        start_datetime = datetime.strptime(start_date, start_date_format)
+        end_datetime = datetime.strptime(end_date, end_date_format)
 
         if start_datetime > end_datetime:
             return ""
@@ -295,16 +337,13 @@ def setup_vector_store():
     vs = VectorStorage()
     source_db = SourcesDB()
     vs.create_schemas()
-    contents = source_db.get_all_parsed_sources_contents_by_type('base')
+    contents = source_db.get_all_parsed_sources_contents_by_type(BASE)
     vs.import_stringed_json_base(contents)
-    contents = source_db.get_all_parsed_sources_contents_by_type('event')
+    contents = source_db.get_all_parsed_sources_contents_by_type(EVENT)
     vs.import_stringed_json_event(contents)
     return vs
 
 
 if __name__ == "__main__":
-    # vs = setup_vector_store()
-    vs = VectorStorage()
-    data = vs.hybrid_query_event("I would love to visit a museum")
+    vs = setup_vector_store()
     vs.close()
-    print(data)

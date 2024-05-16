@@ -25,7 +25,7 @@ ADMINISTRATION = 'administration'
 STATIC = 'static'
 PDF = 'pdf'
 RECORD_TYPE_LABELS = [PLACE, EVENT, ADMINISTRATION, STATIC, PDF]
-
+BASE = 'base'
 EVENT_URL_SUBSTRINGS = ['akce', 'event', 'udalosti', 'program', 'alendar', 'vystav', 'predstaveni',
                         'oncert', 'porad/']
 PLACE_URL_SUBSTRINGS = ['place', 'taste', 'ochutnejte', 'tour', 'galer', 'galler']
@@ -48,3 +48,5 @@ ENCODED_CONTENT = 'encoded_content'
 SYSTEM = "system"
 USER = "user"
 ASSISTANT = "assistant"
+
+INITIAL_ITERATIONS = 3

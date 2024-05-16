@@ -1,23 +1,23 @@
+import argparse
 import json
 import logging
-import os
-import time
-
 import arrow
 import pandas as pd
 from dotenv import load_dotenv
 
-from src.agents.api_agent import ApiAgent, LlamaApiAgent, LocalApiAgent, OpenAIApiAgent
-from src.constants import DATE_FORMAT, TODAY, LOCAL_KEY, LOCAL_URL
+from src.agents.api_agent import ApiAgent
+from src.agents_constants import LLAMA3_70_AGENT
+from src.constants import DATE_FORMAT, TODAY
 from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
-    PARENT, RECORD_TYPE_LABELS
+    PARENT, RECORD_TYPE_LABELS, INITIAL_ITERATIONS, EVENT
 from src.data_acquisition.content_processing.content_classification import get_content_type_preclassified_function_call
 from src.data_acquisition.content_processing.content_parsing import get_parsed_content_preclassified_function_call, \
     BaseSchema
-from src.data_acquisition.sources_store.sourcesdb import SourcesDB
+from src.data_acquisition.sources_store.sources_db import SourcesDB
 from src.data_acquisition.data_retrieval.web_crawler import WebCrawler
 from src.data_acquisition.data_retrieval.web_scraper import WebScraper
 from src.data_acquisition.data_retrieval.pdf_processor import PdfProcessor
+from src.vector_store.vector_storage import VectorStorage, setup_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class DataAcquisitionManager:
         This method is responsible for the data acquisition process. It processes the given urls and passes them to the
         web crawler and the web scraper.
         """
-        logger.info('Acquiring data: ', urls_df)
+        logger.info('Acquiring data: %s', urls_df)
         for i in range(iterations):
             urls_df = self._process_urls(urls_df[URL])
 
@@ -126,13 +126,15 @@ class DataAcquisitionManager:
         """
         self.sources_db.update_existing_urls_date(existing_urls, TODAY)
 
-    def update_by_type_name(self, type_name: str) -> None:
+    def update_by_type_name(self, type_name: str, vec_db: VectorStorage) -> None:
         if type_name == PDF:
             self._update_pdfs()
             return
-        data_df = self.sources_db.get_all_non_crawl_only_not_banned_sources_by_type(type_name)
-        data_df[TYPE_IDS] = data_df[TYPE_IDS].astype('object')
-        self._scrape_and_update_sources(data_df)
+        urls = self.sources_db.get_urls_by_type_and_date_parsed(type_name, TODAY)
+        if type_name == EVENT:
+            vec_db.event_update_urls(urls, self.sources_db)
+        else:
+            vec_db.base_update_urls(urls, self.sources_db)
 
     def _update_pdfs(self) -> None:
         urls = self.sources_db.get_all_pdf_urls()
@@ -193,10 +195,8 @@ class DataAcquisitionManager:
         data to the parser.
         :param new_url: Url that is being processed
         :param ws: WebScraper object
-        :return: List of lists with the processed data, where each list contains the following elements:
-            - crawl_only: boolean
-            - type_id: int
-            - DATE_PARSED: str
+        :param date_added: Date when the url was added
+        :param parent_url: Parent url
         """
         types = []
         date_parsed = None
@@ -264,17 +264,26 @@ class DataAcquisitionManager:
         return json.dumps(content.__dict__, ensure_ascii=False)
 
 
-if __name__ == '__main__':
+def process_arguments():
+    parser = argparse.ArgumentParser(
+        description="Provide the type of data to update, leave blank for initial data acquisition")
+    parser.add_argument("-t", "--type", choices=RECORD_TYPE_LABELS,
+                        help=f"Type is one of {RECORD_TYPE_LABELS}")
+    args = parser.parse_args()
+    return args.type
+
+
+def main():
     load_dotenv()
     sources = SourcesDB()
-    # OpenAIApiAgent(OPENAI_KEY, os.getenv("OPENAI_API_KEY"), "gpt-3.5-turbo-1106")
-    agent = LocalApiAgent(LOCAL_URL, LOCAL_KEY, "mixtral")
-    # LocalApiAgent("http://localhost:8881/v1/", LOCAL_KEY, "llama3"))
-    # LlamaApiAgent("https://api.llama-api.com", os.getenv("LLAMA_API_KEY"), "llama-13b-chat")
-    # LocalApiAgent("http://localhost:11434/v1/", LOCAL_KEY, "mistral")
-    dam = DataAcquisitionManager(sources, agent)
-    st = time.time()
-    print('start time:', time.strftime("%H:%M:%S", time.gmtime(st)))
-    dam.initial_data_acquisition(2)
-    elapsed_time = time.time() - st
-    print('Execution time:', time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+    processing_type = process_arguments()
+    dam = DataAcquisitionManager(sources, LLAMA3_70_AGENT)
+    if processing_type:
+        dam.update_by_type_name(processing_type, VectorStorage())
+    else:
+        dam.initial_data_acquisition(INITIAL_ITERATIONS)
+        setup_vector_store()
+
+
+if __name__ == '__main__':
+    main()
