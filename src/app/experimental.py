@@ -3,7 +3,8 @@ import logging
 import streamlit as st
 from PIL import Image
 
-from src.app.frontend_utils import set_favicon, MODELS, generate_message
+from src.app.frontend_utils import set_favicon, MODELS, generate_message, init_chat_history
+from src.data_acquisition.constants import USER
 
 logger = logging.getLogger(__name__)
 
@@ -21,25 +22,19 @@ def main():
         logger.info(f"Selected model: {selected_model}")
 
     if "messages" not in st.session_state.keys():
-        st.session_state.messages = [{"role": "assistant", "content": "Hi, I am an AI assistant for information about "
-                                                                      "Brno city. How may I help you?"}]
+        init_chat_history()
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    def clear_chat_history():
-        st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
+    st.sidebar.button('Clear Chat History', on_click=init_chat_history)
 
-    st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
-
-    # User-provided prompt
     if prompt := st.chat_input("Ask a question"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
+        st.session_state.messages.append({"role": USER, "content": prompt})
+        with st.chat_message(USER):
             st.write(prompt)
 
-    # Generate a new response if last message is not from assistant
     generate_message(agent, prompt, st.session_state.messages)
 
 
