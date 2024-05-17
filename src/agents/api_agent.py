@@ -3,28 +3,19 @@ import json
 import time
 from abc import ABC
 from dataclasses import asdict
-import instructor
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from openai import OpenAI
-from typing import Type, Callable
-from pydantic import BaseModel, create_model, Field
+from typing import Callable
+from pydantic import BaseModel
 from json_repair import repair_json
 import logging
 
-from src.agents.message import Message, AssistantMessage, UserMessage, SystemMessage
+from src.agents.constants import FUNC_NAME, JSON_ERR, NO_CALL_ERR, RECURSION_ERR, API_ERR, CONN_ERR
+from src.agents.message import Message, AssistantMessage, UserMessage
 from src.constants import MAX_SIZE
 from src.data_acquisition.constants import ADDRESS, DEFAULT_ADDRESS
 
 logger = logging.getLogger(__name__)
-API_ERR = "api_error"
-CONN_ERR = "Connection error"
-RECURSION_ERR = "recursion"
-FUNC_ERR = "Error getting function call response: "
-JSON_ERR = "Error getting JSON format response: "
-NO_CALL_ERR = "No function call found in the response."
-CANT_CALL_ERR = "Error calling function "
-
-FUNC_NAME = "function_name"
 
 
 class ApiAgent(ABC):
@@ -41,7 +32,48 @@ class ApiAgent(ABC):
         self.model_name = model_name
         self.messages_storage = []
 
-    def get_function_call(self, module: dict, functions: list, max_retries: int = 2,
+    def get_base_response(self, messages: list[dict]):
+        """Get the response from the model without function calling"""
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            stream=False
+        )
+        logger.info(f"Response: {str(response)}")
+        return response
+
+    def get_base_call_response(self, messages: list[dict], functions_schemas: list[dict]):
+        """Get the response from the model with function calling
+        :param messages: List of messages to be sent to the model
+        :param functions_schemas: List of function schemas in OpenAI tool format
+        """
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            functions=functions_schemas,
+            stream=False
+        )
+        logger.info(f"Response: {str(response)}")
+        return response
+
+    def get_forced_call_response(self, messages: list[dict], function: Callable, function_call: dict):
+        """Get the response from the model with forced function call
+        :param messages: List of messages to be sent to the model
+        :param function: Function to be called
+        :param function_call: Function call enforcing the function name
+        """
+        schema = [self._function_to_openai_function_schema(function)]
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            functions=schema,
+            stream=False,
+            function_call=function_call,
+        )
+        logger.info(f"Response: {str(response)}")
+        return response
+
+    def get_function_call(self, module: dict, functions: list, max_retries: int = 3,
                           messages: list[Message] = None):
         """
         Instruct the model to call a function and get the result of the function call
@@ -62,7 +94,7 @@ class ApiAgent(ABC):
                                                                                          max_retries - 1))
 
     def get_custom_descr_function_call(self, module: dict, functions: list[tuple[Callable, str]],
-                                       max_retries: int = 2,
+                                       max_retries: int = 3,
                                        messages: list[Message] = None):
         """
         Instruct the model to call a function and get the result of the function call
@@ -83,16 +115,15 @@ class ApiAgent(ABC):
                                                                                                       functions,
                                                                                                       max_retries - 1))
 
-    def _get_function_schemas_with_custom_description(self, functions):
-        functions_schemas = []
-        for f, desc in functions:
-            functions_schema = self._function_to_openai_function_schema(f)
-            functions_schema["description"] = desc
-            functions_schemas.append(functions_schema)
-        return functions_schemas
-
-    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 2,
+    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 3,
                                  messages: list[Message] = None):
+        """ Get the response with forced function call
+        :param module: Module containing the function
+        :param function: Function to be called
+        :param max_retries: Number of retries
+        :param messages: List of messages to be sent to the model
+        :return:
+        """
         if messages:
             self._add_messages_initially(messages)
         con_messages = [asdict(m) for m in self.messages_storage]
@@ -103,7 +134,7 @@ class ApiAgent(ABC):
                                                                                                 max_retries - 1))
 
     def get_json_format_response(self, response_model: BaseModel, messages: list[Message] = None,
-                                 max_retries=2) -> dict:
+                                 max_retries=3) -> dict:
         """
         Get the response in desired JSON format
         :param response_model: Desired response model
@@ -126,33 +157,13 @@ class ApiAgent(ABC):
                                                lambda: self.get_json_format_response(response_model,
                                                                                      max_retries=max_retries - 1))
 
-    def get_base_response(self, messages):
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            stream=False
-        )
-        return response
-
-    def get_base_call_response(self, messages, functions_schemas):
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            functions=functions_schemas,
-            stream=False
-        )
-        return response
-
-    def get_forced_call_response(self, messages, function, function_call):
-        schema = [self._function_to_openai_function_schema(function)]
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            functions=schema,
-            stream=False,
-            function_call=function_call,
-        )
-        return response
+    def _get_function_schemas_with_custom_description(self, functions):
+        functions_schemas = []
+        for f, desc in functions:
+            functions_schema = self._function_to_openai_function_schema(f)
+            functions_schema["description"] = desc
+            functions_schemas.append(functions_schema)
+        return functions_schemas
 
     def _handle_response_function_call_errors(self, module, response, max_retries, handling_function):
         """ Handle the errors in the function call part of the response
@@ -162,11 +173,15 @@ class ApiAgent(ABC):
         :return:
         """
         if response.choices[0].message.function_call is None:
-            self._handle_call_exception("", NO_CALL_ERR, max_retries, handling_function)
-        return self._handle_function_call_return(handling_function, max_retries, module, response)
+            return self._handle_call_exception("", NO_CALL_ERR, max_retries, handling_function)
+        if max_retries > 0:
+            return self._handle_function_call_return(handling_function, max_retries, module, response)
+        logger.error(f"Max retries reached. Skipping.")
+        return None
 
     def _handle_call_exception(self, e, error_text, max_retries, handling_function: Callable):
         if RECURSION_ERR in str(e):
+            logger.error(f"Recursion error: {e}")
             return {}
         if API_ERR in str(e) or CONN_ERR in str(e):
             time.sleep(10)
@@ -196,7 +211,7 @@ class ApiAgent(ABC):
                 return module[name](**arguments)
             return module[name]()
         except RecursionError as e:
-            logger.error(f"Error: {e}")
+            logger.error(f"{e}")
             return
         except Exception as e:
             logger.error(f"Error calling function {name}: {e}")
@@ -339,7 +354,8 @@ class ApiAgent(ABC):
                 return {}
             matched_args[arg] = received_arguments[arg] if received_arguments[arg] not in ["None", "null"] else ""
         redundant_args = [arg for arg in received_arguments if arg not in function_params]
-        self._add_message(UserMessage(f"Redundant arguments provided: {redundant_args}."))
+        if redundant_args:
+            self._add_message(UserMessage(f"Redundant arguments provided: {redundant_args}."))
         return matched_args
 
     @staticmethod
@@ -379,208 +395,3 @@ class ApiAgent(ABC):
         sig = inspect.signature(function)
         params = {param.name: param.annotation.__name__ for param in sig.parameters.values()}
         return params
-
-
-class LlamaApiAgent(ApiAgent):
-    pass
-
-
-class OpenAIApiAgent(ApiAgent):
-    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 2,
-                                 messages: list[Message] = None):
-        if messages:
-            self._add_messages_initially(messages)
-        con_messages = [asdict(m) for m in self.messages_storage]
-        response = self.get_forced_call_response(con_messages, function, dict({"name": function.__name__}))
-        self._add_message(AssistantMessage(str(response.choices[0].message)))
-        return self._handle_response_function_call_errors(module, response, max_retries,
-                                                          lambda: self.get_forced_function_call(module, function,
-                                                                                                max_retries - 1))
-
-
-class LocalApiAgent(ApiAgent):
-
-    def get_json_format_response(self, response_model: BaseModel, messages: list[Message] = None,
-                                 max_retries=2) -> dict:
-        """
-        Get the response in desired JSON format
-        :param response_model: Desired response model
-        :param messages: List of messages to be sent to the model
-        :param max_retries: Number of retries
-        :return: dictionary containing the formatted response
-        """
-        if messages:
-            self._add_messages_initially(messages)
-        messages = [asdict(m) for m in self.messages_storage]
-        client = instructor.patch(
-            self.client,
-            mode=instructor.Mode.JSON,
-        )
-
-        response = client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            response_model=response_model,
-            max_retries=1
-        )
-        print(f"Response: {response}")
-        self._add_message(AssistantMessage(str(response)))
-        try:
-            return dict(response)
-        except Exception as e:
-            return self._handle_call_exception(e, JSON_ERR, max_retries,
-                                               lambda: self.get_json_format_response(response_model,
-                                                                                     max_retries=max_retries - 1))
-
-    def get_function_call(self, module: dict, functions: list, max_retries: int = 2,
-                          messages: list[Message] = None):
-        """
-        Instruct the model to call a function and get the result of the function call
-        :param module: Module containing the functions
-        :param functions: List of functions to be chosen from
-        :param messages: List of messages to be sent to the model
-        :param max_retries: Number of retries
-        :return: result of the called function
-        """
-        try:
-            names_and_descriptions = [self._get_func_name_and_descr_dict(f) for f in functions]
-            name, model = self._get_func_name_and_model(module, functions, names_and_descriptions, max_retries,
-                                                        messages)
-        except Exception as e:
-            logger.error(f"Error choosing function and schema: {e}")
-            return
-        return self._end_func_call(messages, model, module, name, names_and_descriptions, max_retries)
-
-    def get_custom_descr_function_call(self, module: dict, functions: list[tuple[Callable, str]],
-                                       max_retries: int = 2,
-                                       messages: list[Message] = None):
-        try:
-            names_and_descriptions = [{FUNC_NAME: f.__name__, "description": descr} for f, descr in functions]
-            name, model = self._get_func_name_and_model(module, [f for f, _ in functions], names_and_descriptions,
-                                                        max_retries, messages)
-        except Exception as e:
-            logger.error(f"Error choosing function and schema: {e}")
-            return
-        return self._end_func_call(messages, model, module, name, names_and_descriptions, max_retries)
-
-    def _end_func_call(self, messages, model, module, name, names_and_descriptions, max_retries):
-        chosen_descr = self._get_chosen_description(names_and_descriptions, name)
-        messages = self._get_messages_with_params_config(messages,
-                                                         self._get_function_params_dict(module[name]),
-                                                         chosen_descr)
-        if self._get_function_parameters(module, name):
-            return self._call_for_arguments(name, module, model, messages, max_retries)
-        return module[name]()
-
-    def get_forced_function_call(self, module: dict, function: Callable, max_retries: int = 2,
-                                 messages: list[Message] = None):
-        function_name = function.__name__
-        function_schema = self._function_to_pydantic_model(function)
-        messages = self._get_messages_with_params_config(messages, self._get_function_params_dict(function),
-                                                         function.__doc__)
-        if self._get_function_parameters(module, function_name):
-            return self._call_for_arguments(function_name, module, function_schema, messages, max_retries)
-        return module[function_name]()
-
-    def _get_func_name_and_model(self, module, functions, names_and_descriptions, max_retries=1, messages=None):
-        if len(functions) > 1:
-            self._setup_messages(messages, names_and_descriptions)
-            try:
-                name = self._choose_from_functions(module, max_retries)
-                model = self._function_to_pydantic_model(module[name])
-            except RecursionError as e:
-                logger.error(f"Error: {e}")
-                return
-            except Exception as e:
-                return self._handle_call_exception(e, FUNC_ERR, max_retries,
-                                                   lambda: self._get_func_name_and_model(module, functions,
-                                                                                         max_retries - 1))
-        else:
-            name = functions[0].__name__
-            model = self._function_to_pydantic_model(functions[0])
-        return name, model
-
-    def _setup_messages(self, messages, names_and_descriptions):
-        if messages:
-            config_message = SystemMessage(
-                f"You are a helpful assistant with access to the following functions, your task is to choose one of the functions according to the descriptions: ```{names_and_descriptions}```."
-                f"Return valid JSON only as a response.")
-            self._add_messages_initially([config_message] + [self._get_first_user_message(messages)])
-
-    def _choose_from_functions(self, module, max_retires):
-
-        class ChosenFunction(BaseModel):
-            """Chosen function to be called"""
-            function_name: str = Field(...,
-                                       description="Name of one of the provided functions that was chosen to be called")
-
-        response = self.get_json_format_response(ChosenFunction, self.messages_storage)
-        self._add_message(AssistantMessage(str(response)))
-        function_name = response[FUNC_NAME]
-        if not self._does_function_exist(function_name, module):
-            error_msg = f"Got incorrect function name: {function_name}, function not found in the module. Retry."
-            self._handle_call_exception("", error_msg, max_retires,
-                                        lambda: self._choose_from_functions(module, max_retires - 1))
-        return function_name
-
-    @staticmethod
-    def _function_to_pydantic_model(function: Callable) -> Type[BaseModel]:
-        """
-        Takes a function and returns a Pydantic BaseModel class constructed
-        from the function's parameters, assuming all parameters are required
-        and of type str if not annotated.
-        """
-
-        params = inspect.signature(function).parameters
-        fields = {
-            name: (
-                param.annotation if param.annotation is not inspect.Parameter.empty else 'str', ...)
-            for name, param in params.items()
-        }
-        return create_model(function.__name__, **fields)
-
-    def _call_for_arguments(self, function_name, module, function_schema, messages=None, max_retries=2):
-        """Get the arguments for the function call"""
-
-        if messages:
-            self._add_messages_initially(messages)
-        try:
-            response = self.get_json_format_response(function_schema, self.messages_storage, max_retries=max_retries)
-            return self._handle_json_call_return(function_name, function_schema, max_retries, module, response)
-        except Exception as e:
-            return self._handle_call_exception(e, JSON_ERR, max_retries,
-                                               lambda: self._call_for_arguments(function_name, module, function_schema,
-                                                                                max_retries=max_retries - 1))
-
-    def _handle_json_call_return(self, function_name, function_schema, max_retries, module, response):
-        """Handle the return of the response JSON format"""
-        try:
-            arguments = self._match_parameters(response, function_name,
-                                               self._get_function_parameters(module, function_name))
-            if arguments:
-                return module[function_name](**arguments)
-            return module[function_name]()
-        except RecursionError as e:
-            logger.error(f"Error: {e}")
-            return
-        except Exception as e:
-            logger.error(f"{CANT_CALL_ERR}{function_name}: {e}")
-            self._add_message(UserMessage(f"{CANT_CALL_ERR}{function_name}: {e}. Retry."))
-            return self._call_for_arguments(function_name, module, function_schema,
-                                            max_retries=max_retries - 1)
-
-    @staticmethod
-    def _get_messages_with_params_config(messages, parameters, description=None):
-        description_text = f" of function with description: ```{description}``` " if description else ""
-        config_message = SystemMessage(
-            f"You are a smart function calling assistant. Your task is to provide the arguments {parameters} for a function call{description_text}."
-            f"Return valid JSON only as a response, no additional text.")
-        messages = [config_message] + messages if messages else [config_message]
-        return messages
-
-    @staticmethod
-    def _get_chosen_description(names_and_descriptions: list[dict], name: str):
-        for item in names_and_descriptions:
-            if item[FUNC_NAME] == name:
-                return item["description"]
-        return ""

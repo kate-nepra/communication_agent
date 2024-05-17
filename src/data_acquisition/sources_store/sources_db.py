@@ -1,5 +1,4 @@
 import logging
-import os
 
 import mysql
 import mysql.connector
@@ -34,12 +33,14 @@ def create_database(host=HOST, user=DB_USER, password=PASSWORD, database=DATABAS
 
 
 class ContentTypes(Base):
+    """Table for content types - event | base."""
     __tablename__ = 'content_types'
     id = Column(Integer, primary_key=True, autoincrement=True)
     content_type = Column(String(255), unique=True, nullable=False)
 
 
 class ParsedSources(Base):
+    """Table for parsed sources for storing chunks."""
     __tablename__ = 'parsed_sources'
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String(255), nullable=False)
@@ -57,6 +58,7 @@ source_record_types = Table(
 
 
 class RecordTypes(Base):
+    """Table for record types."""
     __tablename__ = 'record_types'
     id = Column(Integer, primary_key=True, autoincrement=True)
     record_type = Column(String(255), unique=True, nullable=False)
@@ -66,6 +68,7 @@ class RecordTypes(Base):
 
 
 class Sources(Base):
+    """Main table for storing sources and parameters."""
     __tablename__ = 'sources'
     url = Column(String(255), primary_key=True, unique=True, nullable=False)
     date_added = Column(Date, nullable=False)
@@ -78,6 +81,8 @@ class Sources(Base):
 
 
 class SourcesDB:
+    """Class for handling the database with sources."""
+
     def __init__(self, host=HOST, user=DB_USER, password=PASSWORD, database=DATABASE):
         self.engine = create_engine(f"mysql+mysqlconnector://{user}:{password}@{host}/{database}")
         Base.metadata.create_all(self.engine)

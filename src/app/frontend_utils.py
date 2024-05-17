@@ -6,7 +6,7 @@ import streamlit as st
 from src.agents.api_agent import ApiAgent
 from src.agents_constants import LLAMA3_70_AGENT, LLAMA3_8_AGENT, MIXTRAL_AGENT, GPT_3_AGENT, LLAMA3_70_API_AGENT
 from src.answer_creation.answer_creation import choose_action
-from src.data_acquisition.constants import ASSISTANT, SYSTEM
+from src.data_acquisition.constants import ASSISTANT, SYSTEM, USER
 from src.vector_store.vector_storage import VectorStorage
 
 MODELS = [{'name': 'Llama3-70B', 'agent': LLAMA3_70_AGENT},
@@ -28,9 +28,16 @@ def init_chat_history():
 
 
 def get_response(agent: ApiAgent, query: str, messages: list[dict]):
+    """Get response from the agent. If the response is empty, try again.
+    :param agent: The agent to get the response from.
+    :param query: The query to get the response for.
+    :param messages: The list of messages in the chat.
+    """
+    msg = SYSTEM_CFG_MESSAGE.copy()
+    msg.extend(messages)
     vec_db = VectorStorage()
     response = choose_action(agent, query, messages, vec_db)
-    return response if response else "There seems to be a connection error."
+    return response or choose_action(agent, query, messages, vec_db) or "There seems to be a connection error."
 
 
 def set_favicon():
@@ -41,17 +48,19 @@ def set_favicon():
         )
 
 
-def generate_message(agent: ApiAgent, prompt: str, messages: list[dict]):
-    if st.session_state.messages[-1]["role"] != ASSISTANT:
-        with st.chat_message(ASSISTANT):
-            with st.spinner("Thinking..."):
-                placeholder = st.empty()
-                msg = SYSTEM_CFG_MESSAGE.copy()
-                msg.extend(messages)
-                response = get_response(agent, prompt, msg)
-                placeholder.markdown(response)
-        message = {"role": ASSISTANT, "content": response}
-        st.session_state.messages.append(message)
+def generate_message(agent: ApiAgent, messages: list[dict]):
+    """Generate a message from the agent based on the messages in the chat and display in the chat.
+    :param agent: The agent to generate the message from.
+    :param messages: The list of messages in the chat.
+    """
+    msg = SYSTEM_CFG_MESSAGE.copy()
+    msg.extend(messages)
+    if prompt := st.chat_input("Ask a Brno related question"):
+        st.session_state.messages.append({"role": USER, "content": prompt})
+        st.chat_message(USER).write(prompt)
+        response = get_response(agent, prompt, st.session_state.messages.copy())
+        st.session_state.messages.append({"role": ASSISTANT, "content": response})
+        st.chat_message(ASSISTANT).write(response)
 
 
 def set_title_and_logo():

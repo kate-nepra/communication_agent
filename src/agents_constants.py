@@ -1,7 +1,9 @@
 import os
 from configparser import ConfigParser
 
-from src.agents.api_agent import LocalApiAgent, LlamaApiAgent, OpenAIApiAgent
+from src.agents.llama_api_agent import LlamaApiAgent
+from src.agents.local_api_agent import LocalApiAgent
+from src.agents.openai_api_agent import OpenAIApiAgent
 from src.constants import CONSTANTS_CONFIG_PATH
 
 _config = ConfigParser()
@@ -20,7 +22,7 @@ LOCAL_KEY = os.getenv('LOCAL_API_KEY')
 LLAMA3_70 = "llama3:70b"
 LLAMA3_8 = "llama3"
 MIXTRAL = "mixtral"
-GPT_3 = "gpt-3.5-turbo-0125"
+GPT_3 = "gpt-3.5-turbo-1106"  # "gpt-3.5-turbo-0125" seems to have issues lately
 LLAMA3_70_API = "llama3-70b"
 
 LLAMA3_70_AGENT = LocalApiAgent(LOCAL_URL, LOCAL_KEY, LLAMA3_70)

@@ -4,6 +4,18 @@ from dataclasses import dataclass
 from src.data_acquisition.constants import USER, ASSISTANT, SYSTEM
 
 
+def message_from_dict(data):
+    role = data.get("role")
+    if role == USER:
+        return UserMessage(data.get("content"))
+    elif role == ASSISTANT:
+        return AssistantMessage(data.get("content"))
+    elif role == SYSTEM:
+        return SystemMessage(data.get("content"))
+    else:
+        raise ValueError(f"Unknown role: {role}")
+
+
 @dataclass
 class Message(ABC):
     role: str

@@ -260,9 +260,9 @@ class VectorStorage:
                 prop="text",
                 query=query
             ),
-            return_metadata=wcq.MetadataQuery(score=True, explain_score=True)
+            return_metadata=wcq.MetadataQuery(score=True)
         )
-        return [p.properties for p in query.objects]
+        return [p.properties for p in query.objects if p.metadata.rerank_score > 0.15]
 
     def hybrid_query_event(self, query: str, dates: list = None):
         """
@@ -284,9 +284,9 @@ class VectorStorage:
                 prop="text",
                 query=query
             ),
-            return_metadata=wcq.MetadataQuery(score=True, explain_score=True)
+            return_metadata=wcq.MetadataQuery(score=True)
         )
-        return [p.properties for p in query.objects]
+        return [p.properties for p in query.objects if p.metadata.rerank_score > 0.15]
 
     def _get_dates_str(self, dates):
         """Returns a string presentation of all dates."""
@@ -345,5 +345,8 @@ def setup_vector_store():
 
 
 if __name__ == "__main__":
-    vs = setup_vector_store()
-    vs.close()
+    # vs = setup_vector_store()
+    # vs.close()
+    vs = VectorStorage()
+    res = vs.hybrid_query_base("Bakery")
+    print(res)
