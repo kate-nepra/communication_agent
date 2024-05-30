@@ -34,6 +34,7 @@ class ApiAgent(ABC):
 
     def get_base_response(self, messages: list[dict]):
         """Get the response from the model without function calling"""
+        logger.info(f"Messages: {str(messages)}")
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
@@ -47,6 +48,7 @@ class ApiAgent(ABC):
         :param messages: List of messages to be sent to the model
         :param functions_schemas: List of function schemas in OpenAI tool format
         """
+        logger.info(f"Messages: {str(messages)}")
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
@@ -62,6 +64,7 @@ class ApiAgent(ABC):
         :param function: Function to be called
         :param function_call: Function call enforcing the function name
         """
+        logger.info(f"Messages: {str(messages)}")
         schema = [self._function_to_openai_function_schema(function)]
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -346,6 +349,9 @@ class ApiAgent(ABC):
                     matched_args[arg] = DEFAULT_ADDRESS
                     logger.error(
                         f"Parameter {arg} required but not found in call for function {function_name}. Applying default value.")
+                    continue
+                if arg == "sources":
+                    matched_args[arg] = ''
                     continue
                 logger.error(f"Parameter {arg} required but not found in call for function {function_name}.")
                 self._add_message(

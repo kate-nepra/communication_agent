@@ -6,7 +6,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from src.agents.api_agent import ApiAgent
-from src.agents_constants import LLAMA3_70_AGENT
+from src.agents_constants import LLAMA3_70_AGENT, GPT_3_AGENT
 from src.constants import DATE_FORMAT, TODAY
 from src.data_acquisition.constants import URL, DATE_PARSED, TYPE_IDS, CRAWL_ONLY, CONTENT_SUBSTRINGS, PDF, BASE_URL, \
     PARENT, RECORD_TYPE_LABELS, INITIAL_ITERATIONS, EVENT
@@ -73,6 +73,7 @@ class DataAcquisitionManager:
         if type_name == PDF:
             self._update_pdfs()
             return
+        self._process_urls(self.sources_db.get_urls_by_type(type_name))
         urls = self.sources_db.get_urls_by_type_and_date_parsed(type_name, TODAY)
         self.sources_db.delete_outdated_parsed_sources(urls)
         if type_name == EVENT:
@@ -243,7 +244,7 @@ class DataAcquisitionManager:
                 date_added = new_urls.loc[new_urls[URL] == new_url, DATE_PARSED].values[0] or arrow.now().format(
                     DATE_FORMAT)
                 if ws.is_crawl_only():
-                    type_name = get_content_type_preclassified_function_call(self.agent, ws.url, ws.html)
+                    type_name = get_content_type_preclassified_function_call(self.agent, ws.url, ws.get_cleaned_html())
                     if not type_name or type_name not in RECORD_TYPE_LABELS:
                         continue
                     self.sources_db.insert_or_update_source(new_url, date_added, None, True, parent_url,
@@ -283,7 +284,7 @@ def main():
     load_dotenv()
     sources = SourcesDB()
     processing_type = process_arguments()
-    dam = DataAcquisitionManager(sources, LLAMA3_70_AGENT)
+    dam = DataAcquisitionManager(sources, GPT_3_AGENT)
     if processing_type:
         dam.update_by_type_name(processing_type, VectorStorage())
     else:

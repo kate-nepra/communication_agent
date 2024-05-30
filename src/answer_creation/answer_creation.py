@@ -17,7 +17,7 @@ def search_internet(query: str) -> list:
 def answer(data, agent, messages):
     messages = [message_from_dict(m) for m in messages]
     cfg = SystemMessage(
-        f"""You are a response building agent. Your task is to analyze user's last query and create answer using provided information. Create also a list with max one or two most helpful url(s) of the sources. Adapt to chat history, anwer in user's language. End with 'built_answer' function call response in valid JSON format, do NOT add any additional text. Here is the information to use for answering user's query: ```{data}```. """)
+        f"""You are a response building agent. Your task is to analyze user's last query and create answer using provided information (if relevant). Today is {WEEKDAY} {TODAY}. Create also a list with max one or two most helpful url(s) of the sources. Adapt to chat history, anwer in user's language. End with 'built_answer' function call response in valid JSON format, do NOT add any additional text. Here is the information to use for answering user's query: ```{data}```. """)
 
     def build_answer(answer_text: str, sources: list):
         """Create the answer to user's question using provided information. Create also a list up to two url(s) of the most helpful used sources.

@@ -22,7 +22,7 @@ LOCAL_KEY = os.getenv('LOCAL_API_KEY')
 LLAMA3_70 = "llama3:70b"
 LLAMA3_8 = "llama3"
 MIXTRAL = "mixtral"
-GPT_3 = "gpt-3.5-turbo-1106"  # "gpt-3.5-turbo-0125" seems to have issues lately
+GPT_3 = "gpt-4-turbo"  # "gpt-3.5-turbo-1106"  # "gpt-3.5-turbo-0125" seems to have issues lately
 LLAMA3_70_API = "llama3-70b"
 
 LLAMA3_70_AGENT = LocalApiAgent(LOCAL_URL, LOCAL_KEY, LLAMA3_70)

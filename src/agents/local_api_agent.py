@@ -30,7 +30,7 @@ class LocalApiAgent(ApiAgent):
             self.client,
             mode=instructor.Mode.JSON,
         )
-
+        logger.info(f"Messages: {messages}")
         response = client.chat.completions.create(
             model=self.model_name,
             messages=messages,

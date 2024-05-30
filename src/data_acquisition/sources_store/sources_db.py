@@ -71,8 +71,8 @@ class Sources(Base):
     """Main table for storing sources and parameters."""
     __tablename__ = 'sources'
     url = Column(String(255), primary_key=True, unique=True, nullable=False)
-    date_added = Column(Date, nullable=False)
-    date_parsed = Column(Date, nullable=True)
+    date_added = Column(String(20), nullable=False)
+    date_parsed = Column(String(20), nullable=True)
     banned = Column(Boolean, nullable=False, default=False)
     crawl_only = Column(Boolean, nullable=True, default=True)
     parent = Column(String(255), nullable=True)
@@ -309,7 +309,7 @@ class SourcesDB:
 
     def add_parsed_sources(self, parsed_sources: list[tuple]):
         """Adds parsed sources to the database."""
-        source_objects = [ParsedSources(url=s[0], content_type_id=s[1], content=s[2]) for s in parsed_sources]
+        source_objects = [ParsedSources(url=s[0], content=s[1], content_type_id=s[2]) for s in parsed_sources]
         self.session.add_all(source_objects)
         self.session.commit()
 
@@ -418,6 +418,14 @@ class SourcesDB:
     def get_urls_by_date_parsed(self):
         """Returns the urls of sources where the date_parsed is today."""
         return [url for url, in self.session.query(Sources.url).filter(Sources.date_parsed == DATE_PARSED).all()]
+
+    def get_urls_by_type(self, type_name):
+        """Returns the urls of sources of the given type."""
+        record_types_alias = aliased(RecordTypes)
+        query = self.session.query(Sources.url).join(Sources.record_types).join(record_types_alias).filter(
+            record_types_alias.record_type == type_name
+        )
+        return [url for url, in query]
 
 
 def main():

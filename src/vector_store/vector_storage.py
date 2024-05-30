@@ -345,8 +345,5 @@ def setup_vector_store():
 
 
 if __name__ == "__main__":
-    # vs = setup_vector_store()
-    # vs.close()
-    vs = VectorStorage()
-    res = vs.hybrid_query_base("Bakery")
-    print(res)
+    vs = setup_vector_store()
+    vs.close()
