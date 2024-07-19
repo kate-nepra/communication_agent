@@ -20,7 +20,7 @@ LLAMA_CLOUD_API_KEY="<llx-key>"
 OPENAI_API_KEY="<sk-key>"
 LLAMA_API_KEY="<LL-key>"
 LOCAL_API_KEY="local"
-COHERE_APIKEY="<cohere-key>
+COHERE_APIKEY="<cohere-key>"
 
 DB_HOST=<host>
 DB_USER=<user>
